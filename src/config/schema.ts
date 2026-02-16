@@ -1,5 +1,5 @@
 /**
- * Zod validation schemas for mcp-firewall configuration
+ * Zod validation schemas for mcpwall configuration
  */
 
 import { z } from 'zod';

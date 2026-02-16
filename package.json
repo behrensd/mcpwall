@@ -1,10 +1,10 @@
 {
-  "name": "mcp-firewall",
+  "name": "mcpwall",
   "version": "0.1.0",
-  "description": "Deterministic security proxy for MCP tool calls",
+  "description": "Deterministic security proxy for MCP tool calls — iptables for MCP. Blocks dangerous tool calls, scans for secret leakage, logs everything. No AI, no cloud, pure rules.",
   "type": "module",
   "bin": {
-    "mcp-firewall": "./dist/index.js"
+    "mcpwall": "./dist/index.js"
   },
   "files": [
     "dist",
@@ -13,16 +13,34 @@
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean",
     "dev": "tsup src/index.ts --format esm --watch",
-    "test": "vitest run"
+    "test": "vitest run",
+    "prepublishOnly": "npm run build && chmod +x dist/index.js"
   },
   "keywords": [
     "mcp",
     "firewall",
     "security",
-    "proxy"
+    "proxy",
+    "model-context-protocol",
+    "claude",
+    "ai-safety",
+    "tool-call",
+    "json-rpc",
+    "audit"
   ],
-  "author": "",
+  "author": "Dom Behrens",
   "license": "FSL-1.1-Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/behrensd/mcp-firewall.git"
+  },
+  "homepage": "https://github.com/behrensd/mcp-firewall",
+  "bugs": {
+    "url": "https://github.com/behrensd/mcp-firewall/issues"
+  },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "commander": "^14.0.3",
     "minimatch": "^10.2.0",

@@ -1,5 +1,5 @@
 /**
- * Stdio proxy for mcp-firewall
+ * Stdio proxy for mcpwall
  * Intercepts JSON-RPC messages between MCP host and server
  */
 
@@ -35,7 +35,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
 
   // Handle spawn errors (e.g., command not found)
   child.on('error', (err) => {
-    process.stderr.write(`[mcp-firewall] Error spawning ${command}: ${err.message}\n`);
+    process.stderr.write(`[mcpwall] Error spawning ${command}: ${err.message}\n`);
     process.exit(1);
   });
 
@@ -69,7 +69,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
           id: msg.id,
           error: {
             code: -32600,
-            message: `[mcp-firewall] ${decision.message || 'Blocked by policy'}`
+            message: `[mcpwall] ${decision.message || 'Blocked by policy'}`
           }
         };
         process.stdout.write(JSON.stringify(errorResponse) + '\n');
@@ -156,7 +156,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
       logger.close();
 
       if (signal) {
-        process.stderr.write(`[mcp-firewall] Child process killed by signal ${signal}\n`);
+        process.stderr.write(`[mcpwall] Child process killed by signal ${signal}\n`);
         process.exit(1);
       } else {
         process.exit(code ?? 0);

@@ -1,5 +1,5 @@
 /**
- * CLI entry point for mcp-firewall
+ * CLI entry point for mcpwall
  * Handles command parsing and launches proxy or setup wizard
  */
 
@@ -20,7 +20,7 @@ if (dashDashIndex !== -1) {
   const commandParts = process.argv.slice(dashDashIndex + 1);
 
   program
-    .name('mcp-firewall')
+    .name('mcpwall')
     .description('Deterministic security proxy for MCP tool calls')
     .version('0.1.0')
     .option('-c, --config <path>', 'Path to config file')
@@ -33,8 +33,8 @@ if (dashDashIndex !== -1) {
   (async () => {
     try {
       if (commandParts.length === 0) {
-        process.stderr.write('[mcp-firewall] Error: No command provided after --\n');
-        process.stderr.write('Usage: mcp-firewall [options] -- <command> [args...]\n');
+        process.stderr.write('[mcpwall] Error: No command provided after --\n');
+        process.stderr.write('Usage: mcpwall [options] -- <command> [args...]\n');
         process.exit(1);
       }
 
@@ -63,14 +63,14 @@ if (dashDashIndex !== -1) {
         logger
       });
     } catch (error: any) {
-      process.stderr.write(`[mcp-firewall] Error: ${error.message}\n`);
+      process.stderr.write(`[mcpwall] Error: ${error.message}\n`);
       process.exit(1);
     }
   })();
 } else {
   // No -- separator, parse subcommands normally
   program
-    .name('mcp-firewall')
+    .name('mcpwall')
     .description('Deterministic security proxy for MCP tool calls')
     .version('0.1.0');
 
@@ -81,19 +81,19 @@ if (dashDashIndex !== -1) {
       try {
         await runInit();
       } catch (error: any) {
-        process.stderr.write(`[mcp-firewall] Error: ${error.message}\n`);
+        process.stderr.write(`[mcpwall] Error: ${error.message}\n`);
         process.exit(1);
       }
     });
 
   program
     .command('wrap <server-name>')
-    .description('Wrap a specific MCP server with mcp-firewall')
+    .description('Wrap a specific MCP server with mcpwall')
     .action(async (serverName: string) => {
       try {
         await runWrap(serverName);
       } catch (error: any) {
-        process.stderr.write(`[mcp-firewall] Error: ${error.message}\n`);
+        process.stderr.write(`[mcpwall] Error: ${error.message}\n`);
         process.exit(1);
       }
     });

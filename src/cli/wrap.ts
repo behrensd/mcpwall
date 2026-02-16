@@ -1,5 +1,5 @@
 /**
- * Wrap a specific MCP server with mcp-firewall
+ * Wrap a specific MCP server with mcpwall
  */
 
 import { readFile, writeFile } from 'node:fs/promises';
@@ -46,27 +46,27 @@ export async function runWrap(serverName: string): Promise<void> {
     const server = config.mcpServers[serverName];
 
     // Check if already wrapped
-    if (server.command === 'npx' && server.args.includes('mcp-firewall')) {
-      process.stderr.write(`[mcp-firewall] ${serverName} is already wrapped in ${configPath}\n`);
+    if (server.command === 'npx' && server.args.includes('mcpwall')) {
+      process.stderr.write(`[mcpwall] ${serverName} is already wrapped in ${configPath}\n`);
       return;
     }
 
     // Wrap it
     config.mcpServers[serverName] = {
       command: 'npx',
-      args: ['-y', 'mcp-firewall', '--', server.command, ...server.args],
+      args: ['-y', 'mcpwall', '--', server.command, ...server.args],
       env: server.env,
     };
 
     await writeFile(configPath, JSON.stringify(config, null, 2), 'utf-8');
-    process.stderr.write(`[mcp-firewall] Wrapped ${serverName} in ${configPath}\n`);
+    process.stderr.write(`[mcpwall] Wrapped ${serverName} in ${configPath}\n`);
     process.stderr.write(`  ${server.command} ${server.args.join(' ')}\n`);
-    process.stderr.write(`  -> npx -y mcp-firewall -- ${server.command} ${server.args.join(' ')}\n`);
+    process.stderr.write(`  -> npx -y mcpwall -- ${server.command} ${server.args.join(' ')}\n`);
     return;
   }
 
   // Not found
-  process.stderr.write(`[mcp-firewall] Server "${serverName}" not found in any config file.\n`);
+  process.stderr.write(`[mcpwall] Server "${serverName}" not found in any config file.\n`);
   process.stderr.write(`Searched:\n`);
   for (const getPath of CONFIG_PATHS) {
     const p = getPath();

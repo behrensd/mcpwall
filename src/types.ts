@@ -1,5 +1,5 @@
 /**
- * Shared TypeScript types for mcp-firewall
+ * Shared TypeScript types for mcpwall
  */
 
 // JSON-RPC 2.0 message types

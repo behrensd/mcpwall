@@ -21,8 +21,8 @@ export function resolveConfigPaths(): { global: string; project: string } {
   const cwd = process.cwd();
 
   return {
-    global: join(home, '.mcp-firewall', 'config.yml'),
-    project: join(cwd, '.mcp-firewall.yml')
+    global: join(home, '.mcpwall', 'config.yml'),
+    project: join(cwd, '.mcpwall.yml')
   };
 }
 
@@ -108,8 +108,8 @@ function mergeConfigs(global: Config, project: Config): Config {
 async function loadBuiltinDefaultRules(): Promise<Config> {
   try {
     // import.meta.url points to the current JS file
-    // In bundled dist: file:///path/to/mcp-firewall/dist/index.js
-    // Rules are at: /path/to/mcp-firewall/rules/default.yml
+    // In bundled dist: file:///path/to/mcpwall/dist/index.js
+    // Rules are at: /path/to/mcpwall/rules/default.yml
     const thisFile = fileURLToPath(import.meta.url);
     const packageRoot = dirname(dirname(thisFile)); // go up from dist/
     const defaultRulesPath = join(packageRoot, 'rules', 'default.yml');

@@ -1,7 +1,7 @@
 version: 1
 
 settings:
-  log_dir: ~/.mcp-firewall/logs
+  log_dir: ~/.mcpwall/logs
   log_level: debug
   default_action: deny
 

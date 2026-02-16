@@ -1,5 +1,5 @@
 /**
- * Default configuration for mcp-firewall
+ * Default configuration for mcpwall
  * Used when no config file exists
  */
 
@@ -59,7 +59,7 @@ export const DEFAULT_SECRET_PATTERNS: SecretPattern[] = [
 export const DEFAULT_CONFIG: Config = {
   version: 1,
   settings: {
-    log_dir: '~/.mcp-firewall/logs',
+    log_dir: '~/.mcpwall/logs',
     log_level: 'info',
     default_action: 'allow'
   },

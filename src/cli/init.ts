@@ -1,5 +1,5 @@
 /**
- * Interactive setup wizard for mcp-firewall
+ * Interactive setup wizard for mcpwall
  * Wraps existing MCP server configurations with the firewall
  */
 
@@ -25,7 +25,7 @@ interface McpConfig {
  * Run the interactive setup wizard
  */
 export async function runInit(): Promise<void> {
-  process.stderr.write('\n🔒 mcp-firewall setup wizard\n\n');
+  process.stderr.write('\n🔒 mcpwall setup wizard\n\n');
 
   const rl = createInterface({
     input: process.stdin,
@@ -60,9 +60,9 @@ export async function runInit(): Promise<void> {
       process.stderr.write('Looked for:\n');
       process.stderr.write('  - ~/.claude.json\n');
       process.stderr.write('  - ./.mcp.json\n\n');
-      process.stderr.write('You can manually configure mcp-firewall by wrapping your MCP server commands:\n');
+      process.stderr.write('You can manually configure mcpwall by wrapping your MCP server commands:\n');
       process.stderr.write('  Original: npx -y @some/server\n');
-      process.stderr.write('  Wrapped:  npx -y mcp-firewall -- npx -y @some/server\n\n');
+      process.stderr.write('  Wrapped:  npx -y mcpwall -- npx -y @some/server\n\n');
       rl.close();
       return;
     }
@@ -103,13 +103,13 @@ export async function runInit(): Promise<void> {
     }
 
     // Step 4: Wrap selected servers
-    process.stderr.write('\nWrapping servers with mcp-firewall...\n\n');
+    process.stderr.write('\nWrapping servers with mcpwall...\n\n');
 
     for (const index of selectedIndices) {
       const { configPath, serverName, config } = allServers[index];
 
       // Check if already wrapped
-      if (config.command === 'npx' && config.args.includes('mcp-firewall')) {
+      if (config.command === 'npx' && config.args.includes('mcpwall')) {
         process.stderr.write(`  ✓ ${serverName} is already wrapped\n`);
         continue;
       }
@@ -117,7 +117,7 @@ export async function runInit(): Promise<void> {
       // Wrap the configuration
       const wrappedConfig: McpServerConfig = {
         command: 'npx',
-        args: ['-y', 'mcp-firewall', '--', config.command, ...config.args],
+        args: ['-y', 'mcpwall', '--', config.command, ...config.args],
         env: config.env
       };
 
@@ -132,7 +132,7 @@ export async function runInit(): Promise<void> {
     }
 
     // Step 5: Create default config if it doesn't exist
-    const firewallConfigDir = join(homedir(), '.mcp-firewall');
+    const firewallConfigDir = join(homedir(), '.mcpwall');
     const firewallConfigPath = join(firewallConfigDir, 'config.yml');
 
     if (!existsSync(firewallConfigPath)) {
@@ -151,8 +151,8 @@ export async function runInit(): Promise<void> {
     }
 
     process.stderr.write('\n✅ Setup complete!\n\n');
-    process.stderr.write('Your MCP servers are now protected by mcp-firewall.\n');
-    process.stderr.write(`View logs in: ${join(homedir(), '.mcp-firewall/logs')}\n`);
+    process.stderr.write('Your MCP servers are now protected by mcpwall.\n');
+    process.stderr.write(`View logs in: ${join(homedir(), '.mcpwall/logs')}\n`);
     process.stderr.write(`Edit rules in: ${firewallConfigPath}\n\n`);
   } finally {
     rl.close();

@@ -1,5 +1,5 @@
 /**
- * Integration tests for mcp-firewall proxy
+ * Integration tests for mcpwall proxy
  * Spawns the built CLI with an echo MCP server and verifies end-to-end behavior
  */
 
@@ -81,7 +81,7 @@ const echoServerPath = join(projectRoot, '.test-echo-server.mjs');
 const TEST_CONFIG = `
 version: 1
 settings:
-  log_dir: /tmp/mcp-firewall-test-logs
+  log_dir: /tmp/mcpwall-test-logs
   log_level: debug
   default_action: allow
 rules:
@@ -166,7 +166,7 @@ describe('Integration: proxy end-to-end', () => {
     // Write temp echo server and config
     await writeFile(echoServerPath, ECHO_SERVER_SCRIPT, 'utf-8');
     await writeFile(testConfigPath, TEST_CONFIG, 'utf-8');
-    await mkdir('/tmp/mcp-firewall-test-logs', { recursive: true });
+    await mkdir('/tmp/mcpwall-test-logs', { recursive: true });
 
     return async () => {
       // Cleanup

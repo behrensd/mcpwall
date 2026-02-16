@@ -1,4 +1,4 @@
-# mcp-firewall
+# mcpwall
 
 Deterministic security proxy for [MCP](https://modelcontextprotocol.io) tool calls. Sits between your AI coding tool (Claude Code, Cursor, Windsurf) and MCP servers, intercepting every JSON-RPC message and enforcing YAML-defined policies — no LLM, no cloud, pure rule-based.
 
@@ -8,7 +8,7 @@ Think **iptables / Little Snitch**, but for MCP.
 
 MCP servers have full access to your filesystem, shell, databases, and APIs. When an AI agent calls `tools/call`, the server executes whatever the agent asks — reading SSH keys, running `rm -rf`, exfiltrating secrets. There's no built-in policy layer.
 
-mcp-firewall adds one. It's a transparent stdio proxy that:
+mcpwall adds one. It's a transparent stdio proxy that:
 
 - **Blocks sensitive file access** — `.ssh/`, `.env`, credentials, browser data
 - **Blocks dangerous commands** — `rm -rf`, pipe-to-shell, reverse shells
@@ -19,13 +19,13 @@ mcp-firewall adds one. It's a transparent stdio proxy that:
 ## Install
 
 ```bash
-npm install -g mcp-firewall
+npm install -g mcpwall
 ```
 
 Or use directly with npx:
 
 ```bash
-npx mcp-firewall -- npx -y @modelcontextprotocol/server-filesystem /path/to/dir
+npx mcpwall -- npx -y @modelcontextprotocol/server-filesystem /path/to/dir
 ```
 
 ## Quick Start
@@ -33,7 +33,7 @@ npx mcp-firewall -- npx -y @modelcontextprotocol/server-filesystem /path/to/dir
 ### Option 1: Interactive setup
 
 ```bash
-npx mcp-firewall init
+npx mcpwall init
 ```
 
 This finds your existing MCP servers in `~/.claude.json` or `.mcp.json` and wraps them.
@@ -61,7 +61,7 @@ To:
     "filesystem": {
       "command": "npx",
       "args": [
-        "-y", "mcp-firewall", "--",
+        "-y", "mcpwall", "--",
         "npx", "-y", "@modelcontextprotocol/server-filesystem", "/Users/me/projects"
       ]
     }
@@ -72,7 +72,7 @@ To:
 ### Option 3: Wrap a specific server
 
 ```bash
-npx mcp-firewall wrap filesystem
+npx mcpwall wrap filesystem
 ```
 
 ## How It Works
@@ -93,10 +93,10 @@ npx mcp-firewall wrap filesystem
 
 ## Configuration
 
-Config is YAML. mcp-firewall looks for:
+Config is YAML. mcpwall looks for:
 
-1. `~/.mcp-firewall/config.yml` (global)
-2. `.mcp-firewall.yml` (project, overrides global)
+1. `~/.mcpwall/config.yml` (global)
+2. `.mcpwall.yml` (project, overrides global)
 
 If neither exists, built-in default rules apply.
 
@@ -106,7 +106,7 @@ If neither exists, built-in default rules apply.
 version: 1
 
 settings:
-  log_dir: ~/.mcp-firewall/logs
+  log_dir: ~/.mcpwall/logs
   log_level: info         # debug | info | warn | error
   default_action: allow   # allow | deny | ask
 
@@ -186,15 +186,15 @@ The special key `_any_value` applies the matcher to ALL argument values.
 Use strict mode:
 
 ```bash
-mcp-firewall -c /path/to/strict.yml -- npx -y @some/server
+mcpwall -c /path/to/strict.yml -- npx -y @some/server
 ```
 
 ## CLI
 
 ```
-mcp-firewall [options] -- <command> [args...]   # Proxy mode
-mcp-firewall init                               # Interactive setup
-mcp-firewall wrap <server-name>                 # Wrap specific server
+mcpwall [options] -- <command> [args...]   # Proxy mode
+mcpwall init                               # Interactive setup
+mcpwall wrap <server-name>                 # Wrap specific server
 ```
 
 Options:
@@ -203,7 +203,7 @@ Options:
 
 ## Audit Logs
 
-Logs are written as JSON Lines to `~/.mcp-firewall/logs/YYYY-MM-DD.jsonl`:
+Logs are written as JSON Lines to `~/.mcpwall/logs/YYYY-MM-DD.jsonl`:
 
 ```json
 {"ts":"2026-02-16T14:30:00Z","method":"tools/call","tool":"read_file","action":"allow","rule":null}
