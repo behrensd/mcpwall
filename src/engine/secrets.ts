@@ -5,35 +5,46 @@
 
 import type { SecretPattern } from '../types.js';
 
+/** A secret pattern with its regex pre-compiled for performance */
+export interface CompiledSecretPattern {
+  name: string;
+  regex: RegExp;
+  entropy_threshold?: number;
+}
+
 /**
- * Scan a string value for known secret patterns
+ * Pre-compile secret patterns. Call once at startup.
+ * Throws on invalid regex (should be caught by Zod validation first).
+ */
+export function compileSecretPatterns(patterns: SecretPattern[]): CompiledSecretPattern[] {
+  return patterns.map((p) => ({
+    name: p.name,
+    regex: new RegExp(p.regex),
+    entropy_threshold: p.entropy_threshold,
+  }));
+}
+
+/**
+ * Scan a string value for known secret patterns (using pre-compiled regexes)
  * Returns the name of the matched pattern, or null if no match
  */
-export function scanForSecrets(value: string, patterns: SecretPattern[]): string | null {
+export function scanForSecrets(value: string, patterns: CompiledSecretPattern[]): string | null {
   for (const pattern of patterns) {
-    try {
-      const regex = new RegExp(pattern.regex);
-      const match = regex.exec(value);
+    // Reset lastIndex in case regex has global flag
+    pattern.regex.lastIndex = 0;
+    const match = pattern.regex.exec(value);
 
-      if (match) {
-        // If entropy threshold is set, check the matched portion
-        if (pattern.entropy_threshold !== undefined) {
-          const matchedString = match[0];
-          const entropy = shannonEntropy(matchedString);
+    if (match) {
+      if (pattern.entropy_threshold !== undefined) {
+        const matchedString = match[0];
+        const entropy = shannonEntropy(matchedString);
 
-          if (entropy < pattern.entropy_threshold) {
-            // Matched the pattern but entropy too low (likely a false positive)
-            continue;
-          }
+        if (entropy < pattern.entropy_threshold) {
+          continue;
         }
-
-        // Pattern matched (and passed entropy check if applicable)
-        return pattern.name;
       }
-    } catch (error) {
-      // Invalid regex - skip this pattern
-      process.stderr.write(`[mcp-firewall] Warning: Invalid regex in pattern "${pattern.name}": ${error}\n`);
-      continue;
+
+      return pattern.name;
     }
   }
 
@@ -44,7 +55,7 @@ export function scanForSecrets(value: string, patterns: SecretPattern[]): string
  * Recursively scan all string values in an object or array
  * Returns the name of the first matched pattern, or null
  */
-export function deepScanObject(obj: unknown, patterns: SecretPattern[]): string | null {
+export function deepScanObject(obj: unknown, patterns: CompiledSecretPattern[]): string | null {
   // Base case: scan strings
   if (typeof obj === 'string') {
     return scanForSecrets(obj, patterns);

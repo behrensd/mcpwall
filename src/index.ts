@@ -9,6 +9,7 @@ import { PolicyEngine } from './engine/policy.js';
 import { Logger } from './logger.js';
 import { createProxy } from './proxy.js';
 import { runInit } from './cli/init.js';
+import { runWrap } from './cli/wrap.js';
 
 // Parse command line arguments, special handling for -- separator
 const dashDashIndex = process.argv.indexOf('--');
@@ -79,6 +80,18 @@ if (dashDashIndex !== -1) {
     .action(async () => {
       try {
         await runInit();
+      } catch (error: any) {
+        process.stderr.write(`[mcp-firewall] Error: ${error.message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('wrap <server-name>')
+    .description('Wrap a specific MCP server with mcp-firewall')
+    .action(async (serverName: string) => {
+      try {
+        await runWrap(serverName);
       } catch (error: any) {
         process.stderr.write(`[mcp-firewall] Error: ${error.message}\n`);
         process.exit(1);

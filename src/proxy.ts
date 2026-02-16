@@ -61,24 +61,26 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     }
 
     if (decision.action === 'deny') {
-      // Send JSON-RPC error response back to Claude
-      const errorResponse = {
-        jsonrpc: '2.0' as const,
-        id: msg.id,
-        error: {
-          code: -32600,
-          message: `[mcp-firewall] ${decision.message || 'Blocked by policy'}`
-        }
-      };
+      // Only send error response for requests (messages with an id).
+      // Notifications (no id) must not receive responses per JSON-RPC 2.0 spec.
+      if (msg.id !== undefined && msg.id !== null) {
+        const errorResponse = {
+          jsonrpc: '2.0' as const,
+          id: msg.id,
+          error: {
+            code: -32600,
+            message: `[mcp-firewall] ${decision.message || 'Blocked by policy'}`
+          }
+        };
+        process.stdout.write(JSON.stringify(errorResponse) + '\n');
+      }
 
-      process.stdout.write(JSON.stringify(errorResponse) + '\n');
-
-      // Log the denial
+      // Log the denial — redact args to avoid leaking secrets into logs
       logger.log({
         ts: new Date().toISOString(),
         method: msg.method,
         tool: toolName,
-        args: msg.method === 'tools/call' ? (msg.params as { arguments?: unknown })?.arguments : undefined,
+        args: '[REDACTED]',
         action: 'deny',
         rule: decision.rule,
         message: decision.message
@@ -109,7 +111,8 @@ export function createProxy(options: ProxyOptions): ChildProcess {
   });
 
   process.stdin.on('end', () => {
-    // When stdin closes, gracefully close child stdin
+    // Process any remaining buffered data before closing
+    inboundBuffer.flush();
     if (child.stdin && !child.stdin.destroyed) {
       child.stdin.end();
     }
@@ -138,6 +141,9 @@ export function createProxy(options: ProxyOptions): ChildProcess {
   if (child.stdout) {
     child.stdout.on('data', (chunk: Buffer) => {
       outboundBuffer.push(chunk.toString());
+    });
+    child.stdout.on('end', () => {
+      outboundBuffer.flush();
     });
   }
 

@@ -51,6 +51,13 @@ export function createLineBuffer(onLine: (line: string) => void): LineBuffer {
           onLine(line);
         }
       }
+    },
+    /** Process any remaining buffered content (call on stream end) */
+    flush(): void {
+      if (buffer.trim()) {
+        onLine(buffer);
+        buffer = '';
+      }
     }
   };
 }

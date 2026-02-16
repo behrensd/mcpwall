@@ -5,17 +5,43 @@
 
 import { minimatch } from 'minimatch';
 import type { Config, JsonRpcMessage, Decision, Rule, ArgumentMatcher } from '../types.js';
-import { scanForSecrets, deepScanObject } from './secrets.js';
+import { scanForSecrets, deepScanObject, compileSecretPatterns, type CompiledSecretPattern } from './secrets.js';
 import { homedir } from 'node:os';
+import { resolve as resolvePath } from 'node:path';
+
+/** Pre-compiled regex for an argument matcher */
+interface CompiledMatcher {
+  regex?: RegExp;
+}
 
 /**
  * Policy engine that evaluates messages against configured rules
  */
 export class PolicyEngine {
   private config: Config;
+  private compiledSecrets: CompiledSecretPattern[];
+  /** Pre-compiled regexes keyed by "ruleIndex:argKey" */
+  private compiledMatchers: Map<string, CompiledMatcher> = new Map();
 
   constructor(config: Config) {
     this.config = config;
+
+    // Pre-compile secret patterns once
+    this.compiledSecrets = compileSecretPatterns(config.secrets?.patterns || []);
+
+    // Pre-compile all rule argument matcher regexes
+    for (let i = 0; i < config.rules.length; i++) {
+      const rule = config.rules[i];
+      if (rule.match.arguments) {
+        for (const [key, matcher] of Object.entries(rule.match.arguments)) {
+          if (matcher.regex) {
+            this.compiledMatchers.set(`${i}:${key}`, {
+              regex: new RegExp(matcher.regex),
+            });
+          }
+        }
+      }
+    }
   }
 
   /**
@@ -29,8 +55,9 @@ export class PolicyEngine {
     }
 
     // Walk rules top-to-bottom, first match wins
-    for (const rule of this.config.rules) {
-      if (this.matchesRule(msg, rule)) {
+    for (let i = 0; i < this.config.rules.length; i++) {
+      const rule = this.config.rules[i];
+      if (this.matchesRule(msg, rule, i)) {
         return {
           action: rule.action,
           rule: rule.name,
@@ -49,7 +76,7 @@ export class PolicyEngine {
   /**
    * Check if a message matches a specific rule
    */
-  private matchesRule(msg: JsonRpcMessage, rule: Rule): boolean {
+  private matchesRule(msg: JsonRpcMessage, rule: Rule, ruleIndex: number): boolean {
     // Check method match
     if (rule.match.method && rule.match.method !== msg.method) {
       return false;
@@ -85,15 +112,16 @@ export class PolicyEngine {
 
         // Check each argument matcher
         for (const [key, matcher] of Object.entries(rule.match.arguments)) {
+          const compiled = this.compiledMatchers.get(`${ruleIndex}:${key}`);
           if (key === '_any_value') {
             // Special key: match against ALL values in arguments
-            if (!this.matchesAnyValue(args, matcher)) {
+            if (!this.matchesAnyValue(args, matcher, compiled)) {
               return false;
             }
           } else {
             // Match specific argument key
             const value = (args as any)[key];
-            if (!this.matchesArgumentValue(value, matcher)) {
+            if (!this.matchesArgumentValue(value, matcher, compiled)) {
               return false;
             }
           }
@@ -109,17 +137,15 @@ export class PolicyEngine {
    * Check if ANY value in the arguments object matches the matcher
    * Used for _any_value special key
    */
-  private matchesAnyValue(args: any, matcher: ArgumentMatcher): boolean {
+  private matchesAnyValue(args: any, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
     // For secrets matcher, use deep scan on entire object
     if (matcher.secrets) {
-      const patterns = this.config.secrets?.patterns || [];
-      const found = deepScanObject(args, patterns);
-      return found !== null;
+      return deepScanObject(args, this.compiledSecrets) !== null;
     }
 
     // For other matchers, check each value individually
     for (const value of Object.values(args)) {
-      if (this.matchesArgumentValue(value, matcher)) {
+      if (this.matchesArgumentValue(value, matcher, compiled)) {
         return true;
       }
     }
@@ -130,7 +156,7 @@ export class PolicyEngine {
   /**
    * Check if a specific argument value matches the matcher
    */
-  private matchesArgumentValue(value: any, matcher: ArgumentMatcher): boolean {
+  private matchesArgumentValue(value: any, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
     // Convert value to string for pattern matching
     const strValue = typeof value === 'string' ? value : JSON.stringify(value);
 
@@ -141,15 +167,11 @@ export class PolicyEngine {
       }
     }
 
-    // Regex matcher
-    if (matcher.regex) {
-      try {
-        const regex = new RegExp(matcher.regex);
-        if (regex.test(strValue)) {
-          return true;
-        }
-      } catch (error) {
-        process.stderr.write(`[mcp-firewall] Warning: Invalid regex in matcher: ${matcher.regex}\n`);
+    // Regex matcher — use pre-compiled regex
+    if (matcher.regex && compiled?.regex) {
+      compiled.regex.lastIndex = 0;
+      if (compiled.regex.test(strValue)) {
+        return true;
       }
     }
 
@@ -160,7 +182,6 @@ export class PolicyEngine {
       const normalizedAllowed = this.normalizePath(allowedPath);
       const normalizedValue = this.normalizePath(strValue);
 
-      // If value does NOT start with the allowed path, it matches (is outside)
       if (!normalizedValue.startsWith(normalizedAllowed)) {
         return true;
       }
@@ -168,11 +189,7 @@ export class PolicyEngine {
 
     // Secrets matcher
     if (matcher.secrets) {
-      const patterns = this.config.secrets?.patterns || [];
-      const found = deepScanObject(value, patterns);
-      if (found !== null) {
-        return true;
-      }
+      return deepScanObject(value, this.compiledSecrets) !== null;
     }
 
     return false;
@@ -189,13 +206,16 @@ export class PolicyEngine {
   }
 
   /**
-   * Normalize a path for comparison (resolve, remove trailing slash)
+   * Normalize a path for comparison — resolves `..` traversal attacks
    */
-  private normalizePath(path: string): string {
+  private normalizePath(p: string): string {
     // Remove quotes if present
-    let normalized = path.replace(/^["']|["']$/g, '');
+    let normalized = p.replace(/^["']|["']$/g, '');
 
-    // Ensure trailing slash for directory comparison
+    // Resolve to absolute path to prevent ../ traversal bypass
+    normalized = resolvePath(normalized);
+
+    // Ensure trailing slash for directory prefix comparison
     if (!normalized.endsWith('/')) {
       normalized += '/';
     }

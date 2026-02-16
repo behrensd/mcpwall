@@ -87,4 +87,5 @@ export interface LogEntry {
 // Line buffer utility interface
 export interface LineBuffer {
   push(chunk: string): void;
+  flush(): void;
 }

@@ -6,12 +6,21 @@
   "bin": {
     "mcp-firewall": "./dist/index.js"
   },
-  "files": ["dist", "rules"],
+  "files": [
+    "dist",
+    "rules"
+  ],
   "scripts": {
     "build": "tsup src/index.ts --format esm --clean",
-    "dev": "tsup src/index.ts --format esm --watch"
+    "dev": "tsup src/index.ts --format esm --watch",
+    "test": "vitest run"
   },
-  "keywords": ["mcp", "firewall", "security", "proxy"],
+  "keywords": [
+    "mcp",
+    "firewall",
+    "security",
+    "proxy"
+  ],
   "author": "",
   "license": "FSL-1.1-Apache-2.0",
   "dependencies": {
@@ -24,6 +33,7 @@
     "@types/minimatch": "^5.1.2",
     "@types/node": "^25.2.3",
     "tsup": "^8.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
   }
 }

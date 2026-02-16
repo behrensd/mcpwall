@@ -6,11 +6,22 @@ import { z } from 'zod';
 import type { Config, SecretPattern, ArgumentMatcher, Rule } from '../types.js';
 
 /**
+ * Validate that a string is a valid regular expression.
+ * Invalid regexes in security rules must fail at load time, not silently at runtime.
+ */
+const validRegex = z.string().refine(
+  (val) => {
+    try { new RegExp(val); return true; } catch { return false; }
+  },
+  (val) => ({ message: `Invalid regex: "${val}"` })
+);
+
+/**
  * Schema for secret pattern definitions
  */
 export const secretPatternSchema = z.object({
   name: z.string(),
-  regex: z.string(),
+  regex: validRegex,
   entropy_threshold: z.number().optional()
 });
 
@@ -19,7 +30,7 @@ export const secretPatternSchema = z.object({
  */
 export const argumentMatcherSchema = z.object({
   pattern: z.string().optional(),
-  regex: z.string().optional(),
+  regex: validRegex.optional(),
   not_under: z.string().optional(),
   secrets: z.boolean().optional()
 });
