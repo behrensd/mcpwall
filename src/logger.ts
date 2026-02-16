@@ -77,6 +77,11 @@ export class Logger {
       }
       this.currentLogFile = logFile;
       this.writeStream = fs.createWriteStream(logFile, { flags: 'a' });
+      this.writeStream.on('error', (err) => {
+        process.stderr.write(`[mcpwall] Log write error: ${err.message}\n`);
+        // Don't crash — degrade gracefully to stderr-only logging
+        this.writeStream = null;
+      });
     }
 
     // Write JSON line

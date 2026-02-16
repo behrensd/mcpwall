@@ -3,7 +3,7 @@
  * Used when no config file exists
  */
 
-import type { Config, SecretPattern } from '../types.js';
+import type { Config, SecretPattern, Rule } from '../types.js';
 
 /**
  * Built-in secret patterns matching common API keys and tokens
@@ -53,8 +53,39 @@ export const DEFAULT_SECRET_PATTERNS: SecretPattern[] = [
 ];
 
 /**
+ * Hardcoded fallback rules — used when rules/default.yml can't be loaded.
+ * These ensure minimum protection even without a config file.
+ */
+export const DEFAULT_RULES: Rule[] = [
+  {
+    name: 'block-ssh-keys',
+    match: { method: 'tools/call', tool: '*', arguments: { _any_value: { regex: '(\\.ssh/|id_rsa|id_ed25519)' } } },
+    action: 'deny',
+    message: 'Blocked: access to SSH keys'
+  },
+  {
+    name: 'block-env-files',
+    match: { method: 'tools/call', tool: '*', arguments: { _any_value: { regex: '(\\.env(\\.local|\\.prod|\\.dev)?$|\\.env/)' } } },
+    action: 'deny',
+    message: 'Blocked: access to .env files'
+  },
+  {
+    name: 'block-destructive-commands',
+    match: { method: 'tools/call', tool: '*', arguments: { _any_value: { regex: '(rm\\s+-rf|rm\\s+-r\\s+/|mkfs\\.|dd\\s+if=)' } } },
+    action: 'deny',
+    message: 'Blocked: dangerous command'
+  },
+  {
+    name: 'block-secret-leakage',
+    match: { method: 'tools/call', tool: '*', arguments: { _any_value: { secrets: true } } },
+    action: 'deny',
+    message: 'Blocked: detected secret in arguments'
+  }
+];
+
+/**
  * Default configuration object
- * Provides sensible defaults with no rules (rules come from default.yml)
+ * Provides sensible defaults with essential built-in rules as fallback.
  */
 export const DEFAULT_CONFIG: Config = {
   version: 1,
@@ -63,7 +94,7 @@ export const DEFAULT_CONFIG: Config = {
     log_level: 'info',
     default_action: 'allow'
   },
-  rules: [],
+  rules: DEFAULT_RULES,
   secrets: {
     patterns: DEFAULT_SECRET_PATTERNS
   }

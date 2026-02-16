@@ -6,8 +6,11 @@
 import { minimatch } from 'minimatch';
 import type { Config, JsonRpcMessage, Decision, Rule, ArgumentMatcher } from '../types.js';
 import { scanForSecrets, deepScanObject, compileSecretPatterns, type CompiledSecretPattern } from './secrets.js';
-import { homedir } from 'node:os';
+import { homedir, platform } from 'node:os';
 import { resolve as resolvePath } from 'node:path';
+
+/** macOS and Windows have case-insensitive filesystems by default */
+const CASE_INSENSITIVE_FS = platform() === 'darwin' || platform() === 'win32';
 
 /** Pre-compiled regex for an argument matcher */
 interface CompiledMatcher {
@@ -82,6 +85,14 @@ export class PolicyEngine {
       return false;
     }
 
+    // H4 fix: if rule has tool/arguments matchers but no explicit method,
+    // it implicitly requires method === 'tools/call'
+    if (!rule.match.method && (rule.match.tool || rule.match.arguments)) {
+      if (msg.method !== 'tools/call') {
+        return false;
+      }
+    }
+
     // For tools/call, check tool name and arguments
     if (msg.method === 'tools/call') {
       // Extract params safely
@@ -97,7 +108,7 @@ export class PolicyEngine {
           return false;
         }
         // Use minimatch for glob matching, "*" matches any tool
-        if (!minimatch(toolName, rule.match.tool)) {
+        if (!minimatch(toolName, rule.match.tool, { dot: true })) {
           return false;
         }
       }
@@ -214,6 +225,11 @@ export class PolicyEngine {
 
     // Resolve to absolute path to prevent ../ traversal bypass
     normalized = resolvePath(normalized);
+
+    // H3 fix: on case-insensitive filesystems, lowercase for comparison
+    if (CASE_INSENSITIVE_FS) {
+      normalized = normalized.toLowerCase();
+    }
 
     // Ensure trailing slash for directory prefix comparison
     if (!normalized.endsWith('/')) {

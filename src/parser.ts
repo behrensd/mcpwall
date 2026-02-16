@@ -6,10 +6,28 @@
 import type { JsonRpcMessage, LineBuffer } from './types.js';
 
 /**
- * Parse a single line as JSON-RPC message
- * Returns null if the line is empty or not valid JSON
+ * Result of parsing a JSON-RPC line — either a single message, a batch, or null
+ */
+export type ParseResult =
+  | { type: 'single'; message: JsonRpcMessage }
+  | { type: 'batch'; messages: JsonRpcMessage[] }
+  | null;
+
+/**
+ * Parse a single line as JSON-RPC message or batch
+ * Returns null if the line is empty or not valid JSON-RPC
  */
 export function parseJsonRpcLine(line: string): JsonRpcMessage | null {
+  const result = parseJsonRpcLineEx(line);
+  if (result?.type === 'single') return result.message;
+  return null;
+}
+
+/**
+ * Extended parser that also detects JSON-RPC batch arrays.
+ * The MCP spec (2025-03-26) allows batch messages: arrays of JSON-RPC objects.
+ */
+export function parseJsonRpcLineEx(line: string): ParseResult {
   const trimmed = line.trim();
   if (!trimmed) {
     return null;
@@ -18,14 +36,27 @@ export function parseJsonRpcLine(line: string): JsonRpcMessage | null {
   try {
     const parsed = JSON.parse(trimmed);
 
-    // Validate that it has at least the jsonrpc field
+    // Batch message: JSON array of JSON-RPC objects
+    if (Array.isArray(parsed)) {
+      const messages: JsonRpcMessage[] = [];
+      for (const item of parsed) {
+        if (item && typeof item === 'object' && item.jsonrpc === '2.0') {
+          messages.push(item as JsonRpcMessage);
+        }
+      }
+      if (messages.length > 0) {
+        return { type: 'batch', messages };
+      }
+      return null;
+    }
+
+    // Single message
     if (!parsed || typeof parsed !== 'object' || parsed.jsonrpc !== '2.0') {
       return null;
     }
 
-    return parsed as JsonRpcMessage;
+    return { type: 'single', message: parsed as JsonRpcMessage };
   } catch {
-    // Not valid JSON
     return null;
   }
 }
@@ -34,12 +65,21 @@ export function parseJsonRpcLine(line: string): JsonRpcMessage | null {
  * Create a line buffer that accumulates chunks and emits complete lines
  * Handles partial lines that arrive across multiple chunks
  */
+const MAX_LINE_LENGTH = 10 * 1024 * 1024; // 10MB — reject lines larger than this
+
 export function createLineBuffer(onLine: (line: string) => void): LineBuffer {
   let buffer = '';
 
   return {
     push(chunk: string): void {
       buffer += chunk;
+
+      // Prevent OOM from missing newlines (M1)
+      if (buffer.length > MAX_LINE_LENGTH && !buffer.includes('\n')) {
+        process.stderr.write(`[mcpwall] Warning: discarding oversized message (${buffer.length} bytes)\n`);
+        buffer = '';
+        return;
+      }
       const lines = buffer.split('\n');
 
       // Keep the last (potentially incomplete) line in the buffer

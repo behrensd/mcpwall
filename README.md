@@ -2,7 +2,7 @@
 
 Deterministic security proxy for [MCP](https://modelcontextprotocol.io) tool calls. Sits between your AI coding tool (Claude Code, Cursor, Windsurf) and MCP servers, intercepting every JSON-RPC message and enforcing YAML-defined policies — no LLM, no cloud, pure rule-based.
 
-Think **iptables / Little Snitch**, but for MCP.
+Think **iptables**, but for MCP tool calls.
 
 ## Why
 
@@ -224,3 +224,7 @@ Denied entries have args redacted to prevent secrets from leaking into logs.
 ## License
 
 [FSL-1.1-ALv2](./LICENSE) — source-available, converts to Apache 2.0 after 2 years.
+
+---
+
+mcpwall is not affiliated with or endorsed by Anthropic or the Model Context Protocol project. MCP is an open protocol maintained by the Agentic AI Foundation under the Linux Foundation.

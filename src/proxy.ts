@@ -5,7 +5,7 @@
 
 import { spawn, type ChildProcess } from 'node:child_process';
 import type { JsonRpcMessage, Decision } from './types.js';
-import { parseJsonRpcLine, createLineBuffer } from './parser.js';
+import { parseJsonRpcLineEx, createLineBuffer } from './parser.js';
 import type { Logger } from './logger.js';
 
 export interface ProxyOptions {
@@ -39,42 +39,21 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     process.exit(1);
   });
 
-  // === INBOUND PATH: Claude → Firewall → MCP Server ===
-  const inboundBuffer = createLineBuffer((line) => {
-    const msg = parseJsonRpcLine(line);
-
-    // Not valid JSON-RPC, forward as-is (pass-through)
-    if (!msg) {
-      if (child.stdin && !child.stdin.destroyed) {
-        child.stdin.write(line + '\n');
-      }
-      return;
-    }
-
-    // Evaluate policy
+  /**
+   * Evaluate a single JSON-RPC message against the policy engine.
+   * Returns the decision and handles deny response/logging.
+   * Returns true if allowed, false if denied.
+   */
+  function evaluateMessage(msg: JsonRpcMessage): boolean {
     const decision = policyEngine.evaluate(msg);
 
-    // Extract tool name for logging (tools/call messages)
+    // Extract tool name for logging
     let toolName: string | undefined;
     if (msg.method === 'tools/call' && msg.params && typeof msg.params === 'object') {
       toolName = (msg.params as { name?: string }).name;
     }
 
     if (decision.action === 'deny') {
-      // Only send error response for requests (messages with an id).
-      // Notifications (no id) must not receive responses per JSON-RPC 2.0 spec.
-      if (msg.id !== undefined && msg.id !== null) {
-        const errorResponse = {
-          jsonrpc: '2.0' as const,
-          id: msg.id,
-          error: {
-            code: -32600,
-            message: `[mcpwall] ${decision.message || 'Blocked by policy'}`
-          }
-        };
-        process.stdout.write(JSON.stringify(errorResponse) + '\n');
-      }
-
       // Log the denial — redact args to avoid leaking secrets into logs
       logger.log({
         ts: new Date().toISOString(),
@@ -85,16 +64,10 @@ export function createProxy(options: ProxyOptions): ChildProcess {
         rule: decision.rule,
         message: decision.message
       });
-
-      return; // Do NOT forward to child
+      return false;
     }
 
     // Allow or ask (ask = allow in Phase 1)
-    if (child.stdin && !child.stdin.destroyed) {
-      child.stdin.write(line + '\n');
-    }
-
-    // Log the action
     logger.log({
       ts: new Date().toISOString(),
       method: msg.method,
@@ -104,6 +77,102 @@ export function createProxy(options: ProxyOptions): ChildProcess {
       rule: decision.rule,
       message: decision.message
     });
+    return true;
+  }
+
+  /**
+   * Build a JSON-RPC error response for a denied request
+   */
+  function buildDenyError(msg: JsonRpcMessage, decision: Decision): object {
+    return {
+      jsonrpc: '2.0' as const,
+      id: msg.id,
+      error: {
+        code: -32600,
+        message: `[mcpwall] ${decision.message || 'Blocked by policy'}`
+      }
+    };
+  }
+
+  // === INBOUND PATH: Claude → Firewall → MCP Server ===
+  const inboundBuffer = createLineBuffer((line) => {
+    try {
+      const result = parseJsonRpcLineEx(line);
+
+      // Not valid JSON-RPC — forward as-is
+      if (!result) {
+        if (child.stdin && !child.stdin.destroyed) {
+          child.stdin.write(line + '\n');
+        }
+        return;
+      }
+
+      // Single message
+      if (result.type === 'single') {
+        const msg = result.message;
+        const decision = policyEngine.evaluate(msg);
+
+        if (decision.action === 'deny') {
+          // Only send error for requests (messages with an id)
+          if (msg.id !== undefined && msg.id !== null) {
+            process.stdout.write(JSON.stringify(buildDenyError(msg, decision)) + '\n');
+          }
+          evaluateMessage(msg); // logs the deny
+          return;
+        }
+
+        evaluateMessage(msg); // logs the allow
+        if (child.stdin && !child.stdin.destroyed) {
+          child.stdin.write(line + '\n');
+        }
+        return;
+      }
+
+      // Batch message (C1 fix): evaluate each element individually
+      if (result.type === 'batch') {
+        const forwarded: object[] = [];
+        const errors: object[] = [];
+
+        for (const msg of result.messages) {
+          const decision = policyEngine.evaluate(msg);
+
+          if (decision.action === 'deny') {
+            evaluateMessage(msg); // logs the deny
+            // Build error response for requests (not notifications)
+            if (msg.id !== undefined && msg.id !== null) {
+              errors.push(buildDenyError(msg, decision));
+            }
+          } else {
+            evaluateMessage(msg); // logs the allow
+            forwarded.push(msg);
+          }
+        }
+
+        // Send deny errors back to client
+        if (errors.length === 1) {
+          process.stdout.write(JSON.stringify(errors[0]) + '\n');
+        } else if (errors.length > 1) {
+          process.stdout.write(JSON.stringify(errors) + '\n');
+        }
+
+        // Forward allowed messages to server
+        if (forwarded.length > 0 && child.stdin && !child.stdin.destroyed) {
+          if (forwarded.length === 1) {
+            child.stdin.write(JSON.stringify(forwarded[0]) + '\n');
+          } else {
+            child.stdin.write(JSON.stringify(forwarded) + '\n');
+          }
+        }
+        return;
+      }
+    } catch (err: any) {
+      // H1 fix: never crash from a single bad message
+      process.stderr.write(`[mcpwall] Error processing inbound message: ${err.message}\n`);
+      // Forward the raw line so the connection isn't silently broken
+      if (child.stdin && !child.stdin.destroyed) {
+        child.stdin.write(line + '\n');
+      }
+    }
   });
 
   process.stdin.on('data', (chunk: Buffer) => {
@@ -111,7 +180,6 @@ export function createProxy(options: ProxyOptions): ChildProcess {
   });
 
   process.stdin.on('end', () => {
-    // Process any remaining buffered data before closing
     inboundBuffer.flush();
     if (child.stdin && !child.stdin.destroyed) {
       child.stdin.end();
@@ -120,21 +188,28 @@ export function createProxy(options: ProxyOptions): ChildProcess {
 
   // === OUTBOUND PATH: MCP Server → Firewall → Claude ===
   const outboundBuffer = createLineBuffer((line) => {
-    // Phase 1: forward all responses without filtering
-    // Phase 2: scan responses for secrets before forwarding
-    process.stdout.write(line + '\n');
+    try {
+      // Phase 1: forward all responses without filtering
+      process.stdout.write(line + '\n');
 
-    // Optional: parse and log at debug level
-    const msg = parseJsonRpcLine(line);
-    if (msg && (msg.result !== undefined || msg.error !== undefined)) {
-      // This is a response message
-      logger.log({
-        ts: new Date().toISOString(),
-        method: 'response',
-        action: 'allow',
-        rule: null,
-        message: msg.error ? `Error: ${msg.error.message}` : undefined
-      });
+      // Optional: parse and log at debug level
+      const result = parseJsonRpcLineEx(line);
+      if (result?.type === 'single') {
+        const msg = result.message;
+        if (msg.result !== undefined || msg.error !== undefined) {
+          logger.log({
+            ts: new Date().toISOString(),
+            method: 'response',
+            action: 'allow',
+            rule: null,
+            message: msg.error ? `Error: ${msg.error.message}` : undefined
+          });
+        }
+      }
+    } catch (err: any) {
+      // Never crash from outbound parsing errors
+      process.stderr.write(`[mcpwall] Error processing outbound message: ${err.message}\n`);
+      try { process.stdout.write(line + '\n'); } catch { /* EPIPE — client disconnected */ }
     }
   });
 
@@ -149,7 +224,6 @@ export function createProxy(options: ProxyOptions): ChildProcess {
 
   // === LIFECYCLE MANAGEMENT ===
 
-  // When child exits, exit with same code
   child.on('exit', (code, signal) => {
     if (!isShuttingDown) {
       isShuttingDown = true;
@@ -164,22 +238,24 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     }
   });
 
-  // Forward signals to child
-  process.on('SIGINT', () => {
+  // Forward signals to child with escalation (M5 fix)
+  function handleSignal(sig: NodeJS.Signals) {
     if (!isShuttingDown && child && !child.killed) {
       isShuttingDown = true;
-      child.kill('SIGINT');
+      child.kill(sig);
+      // Escalate to SIGKILL after 5 seconds if child doesn't exit
+      setTimeout(() => {
+        if (!child.killed) {
+          child.kill('SIGKILL');
+        }
+      }, 5000).unref();
     }
-  });
+  }
 
-  process.on('SIGTERM', () => {
-    if (!isShuttingDown && child && !child.killed) {
-      isShuttingDown = true;
-      child.kill('SIGTERM');
-    }
-  });
+  process.on('SIGINT', () => handleSignal('SIGINT'));
+  process.on('SIGTERM', () => handleSignal('SIGTERM'));
+  process.on('SIGHUP', () => handleSignal('SIGHUP'));
 
-  // Handle parent process exit
   process.on('exit', () => {
     if (!isShuttingDown) {
       logger.close();
