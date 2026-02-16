@@ -60,7 +60,8 @@ if (dashDashIndex !== -1) {
         command,
         args,
         policyEngine,
-        logger
+        logger,
+        logArgs: config.settings.log_args
       });
     } catch (error: any) {
       process.stderr.write(`[mcpwall] Error: ${error.message}\n`);

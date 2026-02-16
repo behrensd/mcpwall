@@ -15,6 +15,7 @@ export interface ProxyOptions {
     evaluate(msg: JsonRpcMessage): Decision;
   };
   logger: Logger;
+  logArgs?: 'full' | 'none';
 }
 
 /**
@@ -22,7 +23,7 @@ export interface ProxyOptions {
  * Returns the child process for lifecycle management
  */
 export function createProxy(options: ProxyOptions): ChildProcess {
-  const { command, args, policyEngine, logger } = options;
+  const { command, args, policyEngine, logger, logArgs = 'none' } = options;
 
   // Spawn the real MCP server
   // inherit stderr so server's debug output goes to stderr
@@ -68,11 +69,16 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     }
 
     // Allow or ask (ask = allow in Phase 1)
+    // M6 fix: only log full args when explicitly configured
+    const loggedArgs = logArgs === 'full' && msg.method === 'tools/call'
+      ? (msg.params as { arguments?: unknown })?.arguments
+      : undefined;
+
     logger.log({
       ts: new Date().toISOString(),
       method: msg.method,
       tool: toolName,
-      args: msg.method === 'tools/call' ? (msg.params as { arguments?: unknown })?.arguments : undefined,
+      args: loggedArgs,
       action: decision.action,
       rule: decision.rule,
       message: decision.message

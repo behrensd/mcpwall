@@ -54,6 +54,7 @@ export interface Config {
     log_dir: string;
     log_level: 'debug' | 'info' | 'warn' | 'error';
     default_action: 'allow' | 'deny' | 'ask';
+    log_args?: 'full' | 'none';
   };
   rules: Rule[];
   secrets?: {

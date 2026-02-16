@@ -1,9 +1,10 @@
 /**
- * Unit tests for PolicyEngine
+ * Unit tests for PolicyEngine and config validation
  */
 
 import { describe, it, expect } from 'vitest';
 import { PolicyEngine } from '../engine/policy';
+import { configSchema } from '../config/schema';
 import type { Config, JsonRpcMessage } from '../types';
 
 describe('PolicyEngine', () => {
@@ -496,6 +497,52 @@ describe('PolicyEngine', () => {
     expect(decision.rule).toBeNull();
   });
 
+  it('_any_value recursive: regex matches values nested inside objects and arrays', () => {
+    const config: Config = {
+      version: 1,
+      settings: { log_dir: '/tmp/test-logs', log_level: 'debug', default_action: 'allow' },
+      rules: [
+        {
+          name: 'block-ssh-anywhere',
+          match: {
+            method: 'tools/call',
+            tool: '*',
+            arguments: { _any_value: { regex: '\\.ssh/' } }
+          },
+          action: 'deny',
+          message: 'SSH access blocked'
+        }
+      ]
+    };
+
+    const engine = new PolicyEngine(config);
+
+    // Nested inside an object
+    const nestedObj: JsonRpcMessage = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: {
+        name: 'run_command',
+        arguments: { options: { target: { path: '/home/user/.ssh/id_rsa' } } }
+      }
+    };
+
+    // Nested inside an array
+    const nestedArr: JsonRpcMessage = {
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: {
+        name: 'run_command',
+        arguments: { files: ['readme.md', '/home/user/.ssh/authorized_keys'] }
+      }
+    };
+
+    expect(engine.evaluate(nestedObj).action).toBe('deny');
+    expect(engine.evaluate(nestedArr).action).toBe('deny');
+  });
+
   it('missing params: tools/call with no params does not crash, returns no match', () => {
     const config: Config = {
       version: 1,
@@ -520,5 +567,66 @@ describe('PolicyEngine', () => {
     const decision = engine.evaluate(noParams);
     expect(decision.action).toBe('allow'); // Falls through to default action
     expect(decision.rule).toBeNull();
+  });
+});
+
+describe('ReDoS protection (M2)', () => {
+  const baseConfig = {
+    version: 1,
+    settings: { log_dir: '/tmp', log_level: 'info', default_action: 'allow' },
+    rules: [] as any[],
+  };
+
+  it('rejects regex with nested quantifiers like (a+)+', () => {
+    const config = {
+      ...baseConfig,
+      rules: [{
+        name: 'bad-rule',
+        match: { tool: '*', arguments: { _any_value: { regex: '(a+)+' } } },
+        action: 'deny',
+      }],
+    };
+    const result = configSchema.safeParse(config);
+    expect(result.success).toBe(false);
+  });
+
+  it('rejects regex with (.*)+', () => {
+    const config = {
+      ...baseConfig,
+      rules: [{
+        name: 'bad-rule',
+        match: { tool: '*', arguments: { _any_value: { regex: '(.*)+$' } } },
+        action: 'deny',
+      }],
+    };
+    const result = configSchema.safeParse(config);
+    expect(result.success).toBe(false);
+  });
+
+  it('accepts safe regex patterns', () => {
+    const config = {
+      ...baseConfig,
+      rules: [{
+        name: 'safe-rule',
+        match: { tool: '*', arguments: { _any_value: { regex: '\\.ssh/|id_rsa' } } },
+        action: 'deny',
+      }],
+    };
+    const result = configSchema.safeParse(config);
+    expect(result.success).toBe(true);
+  });
+
+  it('rejects ReDoS in secret patterns too', () => {
+    const config = {
+      ...baseConfig,
+      secrets: {
+        patterns: [{
+          name: 'bad-secret',
+          regex: '([a-z]+)+@',
+        }],
+      },
+    };
+    const result = configSchema.safeParse(config);
+    expect(result.success).toBe(false);
   });
 });

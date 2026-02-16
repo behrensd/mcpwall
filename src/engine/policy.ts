@@ -8,6 +8,7 @@ import type { Config, JsonRpcMessage, Decision, Rule, ArgumentMatcher } from '..
 import { scanForSecrets, deepScanObject, compileSecretPatterns, type CompiledSecretPattern } from './secrets.js';
 import { homedir, platform } from 'node:os';
 import { resolve as resolvePath } from 'node:path';
+import { realpathSync } from 'node:fs';
 
 /** macOS and Windows have case-insensitive filesystems by default */
 const CASE_INSENSITIVE_FS = platform() === 'darwin' || platform() === 'win32';
@@ -28,6 +29,12 @@ export class PolicyEngine {
 
   constructor(config: Config) {
     this.config = config;
+
+    // M4: warn about ask rules — not interactive in Phase 1
+    const askRules = config.rules.filter(r => r.action === 'ask');
+    if (askRules.length > 0) {
+      process.stderr.write(`[mcpwall] Warning: ${askRules.length} rule(s) use action "ask" which is not yet interactive — these will ALLOW traffic (logged). Rules: ${askRules.map(r => r.name).join(', ')}\n`);
+    }
 
     // Pre-compile secret patterns once
     this.compiledSecrets = compileSecretPatterns(config.secrets?.patterns || []);
@@ -154,11 +161,32 @@ export class PolicyEngine {
       return deepScanObject(args, this.compiledSecrets) !== null;
     }
 
-    // For other matchers, check each value individually
-    for (const value of Object.values(args)) {
-      if (this.matchesArgumentValue(value, matcher, compiled)) {
-        return true;
+    // M3 fix: recursively scan all values, not just top-level
+    return this.deepMatchAny(args, matcher, compiled);
+  }
+
+  /**
+   * Recursively check if any value in a nested structure matches the matcher
+   */
+  private deepMatchAny(obj: any, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
+    if (obj === null || obj === undefined) return false;
+
+    if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') {
+      return this.matchesArgumentValue(obj, matcher, compiled);
+    }
+
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        if (this.deepMatchAny(item, matcher, compiled)) return true;
       }
+      return false;
+    }
+
+    if (typeof obj === 'object') {
+      for (const value of Object.values(obj)) {
+        if (this.deepMatchAny(value, matcher, compiled)) return true;
+      }
+      return false;
     }
 
     return false;
@@ -225,6 +253,13 @@ export class PolicyEngine {
 
     // Resolve to absolute path to prevent ../ traversal bypass
     normalized = resolvePath(normalized);
+
+    // M8 fix: resolve symlinks when the path exists on disk
+    try {
+      normalized = realpathSync(normalized);
+    } catch {
+      // Path doesn't exist yet — use the resolved path as-is
+    }
 
     // H3 fix: on case-insensitive filesystems, lowercase for comparison
     if (CASE_INSENSITIVE_FS) {
