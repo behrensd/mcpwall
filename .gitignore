@@ -5,3 +5,7 @@ dist/
 .env.*
 *.log
 .DS_Store
+
+# Internal planning docs (not for public)
+docs/internal/
+specs/
