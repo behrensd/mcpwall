@@ -1,0 +1,226 @@
+version: 1
+
+settings:
+  log_dir: ~/.mcp-firewall/logs
+  log_level: debug
+  default_action: deny
+
+rules:
+  # === EXPLICIT ALLOWS (whitelist mode) ===
+  # Only allow reading files under project directory
+  - name: allow-project-reads
+    match:
+      method: tools/call
+      tool: "read_file"
+      arguments:
+        path:
+          not_under: "${PROJECT_DIR}"
+    action: deny
+    message: "Strict mode: file reads restricted to project directory"
+
+  - name: allow-project-reads-pass
+    match:
+      method: tools/call
+      tool: "read_file"
+    action: allow
+
+  # Only allow writing files under project directory
+  - name: block-external-writes
+    match:
+      method: tools/call
+      tool: "write_file"
+      arguments:
+        path:
+          not_under: "${PROJECT_DIR}"
+    action: deny
+    message: "Strict mode: file writes restricted to project directory"
+
+  - name: allow-project-writes-pass
+    match:
+      method: tools/call
+      tool: "write_file"
+    action: allow
+
+  # Allow listing files under project directory
+  - name: allow-list-files
+    match:
+      method: tools/call
+      tool: "list_directory"
+    action: allow
+
+  # Allow search within project
+  - name: allow-search
+    match:
+      method: tools/call
+      tool: "search_files"
+    action: allow
+
+  # === FILE ACCESS PROTECTION ===
+  - name: block-ssh-keys
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(\\.ssh/|id_rsa|id_ed25519|id_ecdsa|authorized_keys)"
+    action: deny
+    message: "Blocked: access to SSH keys"
+
+  - name: block-env-files
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "/\\.env($|\\.)"
+    action: deny
+    message: "Blocked: access to .env files"
+
+  - name: block-credentials
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(\\.aws/|\\.npmrc|\\.docker/config\\.json|\\.kube/config|\\.gnupg/|\\.netrc|\\.pgpass)"
+    action: deny
+    message: "Blocked: access to credential files"
+
+  - name: block-browser-data
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(Chrome|Firefox|Safari|Brave|Edge)/(Default|Profile|Cookies|Login Data|Web Data)"
+    action: deny
+    message: "Blocked: access to browser data"
+
+  - name: block-password-managers
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(1Password|KeePass|LastPass|Bitwarden|keychain-db)"
+    action: deny
+    message: "Blocked: access to password manager data"
+
+  # === DANGEROUS COMMANDS ===
+  - name: block-destructive-commands
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(rm\\s+-r|rm\\s+-f|rmdir\\s+/|mkfs|dd\\s+if=|format\\s+[A-Z]:|chmod\\s+777|chown\\s+-R)"
+    action: deny
+    message: "Blocked: destructive command"
+
+  - name: block-pipe-to-shell
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(curl|wget|fetch|http).*\\|.*(bash|sh|zsh|python|node|ruby|perl)"
+    action: deny
+    message: "Blocked: piping remote content to shell"
+
+  - name: block-reverse-shells
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(nc\\s+-[le]|/dev/tcp/|bash\\s+-i\\s+>&|mkfifo|socat|telnet.*\\|.*sh)"
+    action: deny
+    message: "Blocked: potential reverse shell"
+
+  - name: block-network-exfiltration
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(curl|wget|nc|ncat)\\s+.*(-d|--data|--upload-file|<)"
+    action: deny
+    message: "Blocked: potential data exfiltration"
+
+  - name: block-process-manipulation
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(kill\\s+-9|killall|pkill|nohup|disown|setsid)"
+    action: deny
+    message: "Blocked: process manipulation"
+
+  - name: block-system-modification
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(crontab|at\\s+|systemctl|launchctl|schtasks)"
+    action: deny
+    message: "Blocked: system modification"
+
+  # === SECRET LEAKAGE ===
+  - name: block-secret-leakage
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          secrets: true
+    action: deny
+    message: "Blocked: detected secret/API key in tool arguments"
+
+  # === PROTOCOL SAFETY ===
+  - name: allow-initialize
+    match:
+      method: initialize
+    action: allow
+
+  - name: allow-tools-list
+    match:
+      method: tools/list
+    action: allow
+
+  - name: allow-notifications
+    match:
+      method: "notifications/*"
+    action: allow
+
+  # Default: deny everything else (set in settings above)
+
+secrets:
+  patterns:
+    - name: aws-access-key
+      regex: "AKIA[0-9A-Z]{16}"
+    - name: aws-secret-key
+      regex: "[A-Za-z0-9/+=]{40}"
+      entropy_threshold: 4.5
+    - name: github-token
+      regex: "(gh[ps]_[A-Za-z0-9_]{36,}|github_pat_[A-Za-z0-9_]{22,})"
+    - name: openai-key
+      regex: "sk-[A-Za-z0-9]{20,}"
+    - name: anthropic-key
+      regex: "sk-ant-[A-Za-z0-9-]{20,}"
+    - name: stripe-key
+      regex: "(sk|pk|rk)_(test|live)_[A-Za-z0-9]{24,}"
+    - name: private-key-header
+      regex: "-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"
+    - name: jwt-token
+      regex: "eyJ[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}\\.[A-Za-z0-9_-]{10,}"
+    - name: slack-token
+      regex: "xox[bpoas]-[A-Za-z0-9-]+"
+    - name: database-url
+      regex: "(postgres|mysql|mongodb|redis)://[^\\s]+"
+    - name: gcp-key
+      regex: "AIza[0-9A-Za-z_-]{35}"
+    - name: azure-key
+      regex: "[A-Za-z0-9+/]{86}=="
+      entropy_threshold: 4.5

@@ -1,0 +1,141 @@
+/**
+ * JSON Lines audit logger
+ * Writes to both stderr (for human readability) and daily log files
+ */
+
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import type { LogEntry } from './types.js';
+
+export interface LoggerOptions {
+  logDir: string;
+  logLevel: 'debug' | 'info' | 'warn' | 'error';
+}
+
+const LOG_LEVELS = {
+  debug: 0,
+  info: 1,
+  warn: 2,
+  error: 3
+};
+
+export class Logger {
+  private logDir: string;
+  private logLevel: number;
+  private currentLogFile: string | null = null;
+  private writeStream: fs.WriteStream | null = null;
+
+  constructor(options: LoggerOptions) {
+    this.logDir = this.expandPath(options.logDir);
+    this.logLevel = LOG_LEVELS[options.logLevel] || LOG_LEVELS.info;
+
+    // Create log directory if it doesn't exist
+    if (!fs.existsSync(this.logDir)) {
+      fs.mkdirSync(this.logDir, { recursive: true });
+    }
+  }
+
+  /**
+   * Log an entry to both stderr and the daily log file
+   */
+  log(entry: LogEntry): void {
+    const level = this.getLogLevel(entry.action);
+    if (LOG_LEVELS[level] < this.logLevel) {
+      return;
+    }
+
+    // Ensure timestamp
+    const fullEntry: LogEntry = {
+      ...entry,
+      ts: entry.ts || new Date().toISOString()
+    };
+
+    // Write JSON line to file
+    this.writeToFile(fullEntry);
+
+    // Write human-readable summary to stderr
+    this.writeToStderr(fullEntry);
+  }
+
+  /**
+   * Close the log file handle
+   */
+  close(): void {
+    if (this.writeStream) {
+      this.writeStream.end();
+      this.writeStream = null;
+    }
+  }
+
+  private writeToFile(entry: LogEntry): void {
+    const logFile = this.getLogFilePath();
+
+    // Open new file if needed (daily rotation)
+    if (logFile !== this.currentLogFile) {
+      if (this.writeStream) {
+        this.writeStream.end();
+      }
+      this.currentLogFile = logFile;
+      this.writeStream = fs.createWriteStream(logFile, { flags: 'a' });
+    }
+
+    // Write JSON line
+    const line = JSON.stringify(entry) + '\n';
+    if (this.writeStream) {
+      this.writeStream.write(line);
+    } else {
+      // Fallback to sync write if stream isn't ready
+      fs.appendFileSync(logFile, line);
+    }
+  }
+
+  private writeToStderr(entry: LogEntry): void {
+    const timestamp = new Date(entry.ts).toISOString().substring(11, 19); // HH:MM:SS
+    const action = this.formatAction(entry.action);
+    const method = entry.method || 'unknown';
+    const tool = entry.tool ? ` ${entry.tool}` : '';
+    const rule = entry.rule ? ` [${entry.rule}]` : '';
+    const message = entry.message ? ` - ${entry.message}` : '';
+
+    const logLine = `[${timestamp}] ${action} ${method}${tool}${rule}${message}\n`;
+    process.stderr.write(logLine);
+  }
+
+  private getLogFilePath(): string {
+    const date = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+    return path.join(this.logDir, `${date}.jsonl`);
+  }
+
+  private getLogLevel(action: string): 'debug' | 'info' | 'warn' | 'error' {
+    switch (action) {
+      case 'deny':
+        return 'warn';
+      case 'ask':
+        return 'info';
+      case 'allow':
+        return 'debug';
+      default:
+        return 'info';
+    }
+  }
+
+  private formatAction(action: string): string {
+    switch (action) {
+      case 'allow':
+        return '\x1b[32mALLOW\x1b[0m'; // green
+      case 'deny':
+        return '\x1b[31mDENY\x1b[0m';  // red
+      case 'ask':
+        return '\x1b[33mASK\x1b[0m';   // yellow
+      default:
+        return action.toUpperCase();
+    }
+  }
+
+  private expandPath(p: string): string {
+    if (p.startsWith('~/')) {
+      return path.join(process.env.HOME || '', p.slice(2));
+    }
+    return p;
+  }
+}
