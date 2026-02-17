@@ -6,7 +6,7 @@ If you discover a security vulnerability in mcpwall, please report it responsibl
 
 **Do not open a public GitHub issue for security vulnerabilities.**
 
-Instead, please email: **security@mcpwall.dev**
+Instead, please email: **info@behrens-ai.de**
 
 Include:
 - Description of the vulnerability
