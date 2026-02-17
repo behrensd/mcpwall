@@ -10,8 +10,8 @@ dist/
 docs/internal/
 specs/
 
-# Landing page (deployed separately)
-site/
+# Vercel config
+site/.vercel/
 
 # MCP Registry auth tokens
 .mcpregistry_*
