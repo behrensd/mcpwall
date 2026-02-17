@@ -4,7 +4,7 @@
   "description": "Deterministic security proxy for MCP tool calls — iptables for MCP. Blocks dangerous tool calls, scans for secret leakage, logs everything. No AI, no cloud, pure rules.",
   "type": "module",
   "bin": {
-    "mcpwall": "./dist/index.js"
+    "mcpwall": "dist/index.js"
   },
   "files": [
     "dist",
@@ -32,7 +32,7 @@
   "license": "FSL-1.1-Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/behrensd/mcp-firewall.git"
+    "url": "git+https://github.com/behrensd/mcp-firewall.git"
   },
   "homepage": "https://github.com/behrensd/mcp-firewall",
   "bugs": {
