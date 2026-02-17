@@ -119,12 +119,12 @@ npx mcpwall wrap filesystem
 └──────────────┘              └──────────────┘              └──────────────┘
 ```
 
-1. Intercepts every JSON-RPC message on stdin/stdout
+1. Intercepts every JSON-RPC request on stdin
 2. Parses `tools/call` requests — extracts tool name and arguments
 3. Walks rules top-to-bottom, first match wins
 4. **Allow**: forward to real server
 5. **Deny**: return JSON-RPC error to host, log, do not forward
-6. Responses from server are forwarded back transparently
+6. Responses from server are forwarded back and logged
 
 ## Configuration
 
@@ -242,7 +242,7 @@ All tool calls are logged by default — both allowed and denied. Logs are writt
 
 ```json
 {"ts":"2026-02-16T14:30:00Z","method":"tools/call","tool":"read_file","action":"allow","rule":null}
-{"ts":"2026-02-16T14:30:05Z","method":"tools/call","tool":"read_file","action":"deny","rule":"block-ssh-keys","message":"Blocked: access to SSH keys"}
+{"ts":"2026-02-16T14:30:05Z","method":"tools/call","tool":"read_file","args":"[REDACTED]","action":"deny","rule":"block-ssh-keys","message":"Blocked: access to SSH keys"}
 ```
 
 Denied entries have args redacted to prevent secrets from leaking into logs.
