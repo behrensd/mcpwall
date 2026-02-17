@@ -30,7 +30,37 @@ npx mcpwall -- npx -y @modelcontextprotocol/server-filesystem /path/to/dir
 
 ## Quick Start
 
-### Option 1: Interactive setup
+### Option 1: Docker MCP Toolkit
+
+If you use [Docker MCP Toolkit](https://docs.docker.com/ai/mcp-catalog-and-toolkit/toolkit/) (the most common setup), change your MCP config from:
+
+```json
+{
+  "mcpServers": {
+    "MCP_DOCKER": {
+      "command": "docker",
+      "args": ["mcp", "gateway", "run"]
+    }
+  }
+}
+```
+
+To:
+
+```json
+{
+  "mcpServers": {
+    "MCP_DOCKER": {
+      "command": "npx",
+      "args": ["-y", "mcpwall", "--", "docker", "mcp", "gateway", "run"]
+    }
+  }
+}
+```
+
+That's it. mcpwall now sits in front of all your Docker MCP servers, logging every tool call and blocking dangerous ones. No config file needed — sensible defaults apply automatically.
+
+### Option 2: Interactive setup
 
 ```bash
 npx mcpwall init
@@ -38,7 +68,7 @@ npx mcpwall init
 
 This finds your existing MCP servers in `~/.claude.json` or `.mcp.json` and wraps them.
 
-### Option 2: Manual wrapping
+### Option 3: Manual wrapping (any MCP server)
 
 Change your MCP config from:
 
@@ -69,7 +99,7 @@ To:
 }
 ```
 
-### Option 3: Wrap a specific server
+### Option 4: Wrap a specific server
 
 ```bash
 npx mcpwall wrap filesystem
@@ -79,7 +109,7 @@ npx mcpwall wrap filesystem
 
 ```
 ┌──────────────┐    stdio     ┌──────────────┐    stdio     ┌──────────────┐
-│  Claude Code │ ──────────▶  │ MCP Firewall │ ──────────▶  │  Real MCP    │
+│  Claude Code │ ──────────▶  │   mcpwall    │ ──────────▶  │  Real MCP    │
 │  (MCP Host)  │ ◀──────────  │   (proxy)    │ ◀──────────  │   Server     │
 └──────────────┘              └──────────────┘              └──────────────┘
 ```
@@ -203,7 +233,7 @@ Options:
 
 ## Audit Logs
 
-Logs are written as JSON Lines to `~/.mcpwall/logs/YYYY-MM-DD.jsonl`:
+All tool calls are logged by default — both allowed and denied. Logs are written as JSON Lines to `~/.mcpwall/logs/YYYY-MM-DD.jsonl`:
 
 ```json
 {"ts":"2026-02-16T14:30:00Z","method":"tools/call","tool":"read_file","action":"allow","rule":null}
@@ -211,6 +241,8 @@ Logs are written as JSON Lines to `~/.mcpwall/logs/YYYY-MM-DD.jsonl`:
 ```
 
 Denied entries have args redacted to prevent secrets from leaking into logs.
+
+mcpwall also prints color-coded output to stderr so you can see decisions in real time.
 
 ## Security Design
 

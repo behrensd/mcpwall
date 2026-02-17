@@ -104,9 +104,8 @@ export class Logger {
       case 'deny':
         return 'warn';
       case 'ask':
-        return 'info';
       case 'allow':
-        return 'debug';
+        return 'info';
       default:
         return 'info';
     }

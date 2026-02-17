@@ -1,6 +1,6 @@
 {
   "name": "mcpwall",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Deterministic security proxy for MCP tool calls — iptables for MCP. Blocks dangerous tool calls, scans for secret leakage, logs everything. No AI, no cloud, pure rules.",
   "type": "module",
   "bin": {
