@@ -1,3 +1,4 @@
+<!-- mcp-name: io.github.behrensd/mcpwall -->
 # mcpwall
 
 [![npm version](https://img.shields.io/npm/v/mcpwall)](https://www.npmjs.com/package/mcpwall)
