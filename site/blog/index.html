@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Blog — mcpwall</title>
+  <meta name="description" content="Security research and technical writing on MCP tool call security, AI agent threats, and runtime policy enforcement.">
+  <meta property="og:title" content="Blog — mcpwall">
+  <meta property="og:description" content="Security research and technical writing on MCP tool call security.">
+  <meta property="og:type" content="website">
+  <meta property="og:url" content="https://mcpwall.dev/blog">
+  <meta property="og:site_name" content="mcpwall">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              200: '#a5f3fc',
+              300: '#67e8f9',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+            },
+            surface: {
+              900: '#09090b',
+              800: '#0f0f13',
+              700: '#18181b',
+              600: '#1e1e24',
+              500: '#27272a',
+            },
+            danger: {
+              400: '#f87171',
+              500: '#ef4444',
+              600: '#dc2626',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      background-color: #09090b;
+      color: #e4e4e7;
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+    }
+    .dot-grid {
+      background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+    .post-card {
+      border: 1px solid rgba(255,255,255,0.06);
+      background: rgba(15,15,19,0.6);
+      transition: border-color 0.3s, background 0.3s, transform 0.2s;
+    }
+    .post-card:hover {
+      border-color: rgba(6,182,212,0.3);
+      background: rgba(15,15,19,0.9);
+      transform: translateY(-2px);
+    }
+    .fade-up {
+      opacity: 0;
+      transform: translateY(20px);
+      animation: fadeUp 0.6s ease forwards;
+    }
+    @keyframes fadeUp {
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body class="dot-grid min-h-screen">
+
+  <nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4" style="background: rgba(9,9,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.04);">
+    <div class="flex items-center gap-4">
+      <a href="https://mcpwall.dev" class="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </a>
+      <a href="https://mcpwall.dev" class="font-display font-800 text-lg tracking-tight text-zinc-100 hover:text-white transition-colors">mcpwall</a>
+      <span class="text-zinc-600 font-mono text-xs">/</span>
+      <span class="text-zinc-500 font-mono text-xs">blog</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="https://mcpwall.dev" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors font-body hidden sm:block">Home</a>
+      <a href="https://github.com/behrensd/mcp-firewall" target="_blank" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors font-body flex items-center gap-1.5">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        <span class="hidden sm:inline">GitHub</span>
+      </a>
+    </div>
+  </nav>
+
+  <main class="pt-32 pb-24 px-6 md:px-12 max-w-4xl mx-auto">
+    <div class="fade-up mb-16">
+      <span class="font-mono text-xs text-brand-500 tracking-widest uppercase mb-4 block">Research &amp; Writing</span>
+      <h1 class="font-display font-800 text-4xl md:text-5xl text-zinc-100 mb-4">Blog</h1>
+      <p class="font-body text-zinc-500 text-lg max-w-xl">MCP security research, attack analysis, and runtime policy enforcement.</p>
+    </div>
+
+    <!-- Post list -->
+    <div class="space-y-4 fade-up" style="animation-delay: 0.15s;">
+
+      <a href="/blog/your-mcp-tools-are-a-backdoor" class="post-card block rounded-xl p-6 md:p-8 no-underline">
+        <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+          <div class="flex-1 min-w-0">
+            <div class="flex items-center gap-3 mb-3">
+              <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-mono bg-danger-500/10 text-danger-400 border border-danger-500/20">
+                <span class="w-1.5 h-1.5 rounded-full bg-danger-400"></span>
+                attack research
+              </span>
+              <time datetime="2026-02-17" class="font-mono text-xs text-zinc-600">2026-02-17</time>
+            </div>
+            <h2 class="font-display font-700 text-xl md:text-2xl text-zinc-100 mb-2">Your MCP Tools Are a Backdoor</h2>
+            <p class="font-body text-zinc-500 text-sm md:text-base leading-relaxed">I let Claude Code install an MCP server. Three seconds later, it read my SSH private key. No warning, no prompt, no log entry.</p>
+          </div>
+          <div class="flex-shrink-0 text-zinc-600 md:pt-8">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </div>
+        </div>
+      </a>
+
+      <!-- Add more posts here. Copy the <a class="post-card"> block above and update href, tag, date, title, description. -->
+
+    </div>
+  </main>
+
+  <footer class="border-t border-white/5 py-12 px-6 md:px-12">
+    <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+      <span class="font-mono text-xs text-zinc-600">&copy; 2026 Dom Behrens</span>
+      <div class="flex items-center gap-6">
+        <a href="https://github.com/behrensd/mcp-firewall" target="_blank" class="font-mono text-xs text-zinc-600 hover:text-zinc-400 transition-colors">GitHub</a>
+        <a href="https://www.npmjs.com/package/mcpwall" target="_blank" class="font-mono text-xs text-zinc-600 hover:text-zinc-400 transition-colors">npm</a>
+        <a href="https://mcpwall.dev" class="font-mono text-xs text-zinc-600 hover:text-zinc-400 transition-colors">mcpwall.dev</a>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
