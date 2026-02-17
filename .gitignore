@@ -9,3 +9,14 @@ dist/
 # Internal planning docs (not for public)
 docs/internal/
 specs/
+
+# Landing page (deployed separately)
+site/
+
+# IDE
+.vscode/
+.idea/
+
+# Build artifacts
+*.tsbuildinfo
+coverage/
