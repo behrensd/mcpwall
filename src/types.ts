@@ -1,8 +1,3 @@
-/**
- * Shared TypeScript types for mcpwall
- */
-
-// JSON-RPC 2.0 message types
 export interface JsonRpcMessage {
   jsonrpc: '2.0';
   id?: string | number | null;
@@ -18,7 +13,6 @@ export interface JsonRpcError {
   data?: unknown;
 }
 
-// Policy engine types
 export interface Rule {
   name: string;
   match: {
@@ -28,10 +22,6 @@ export interface Rule {
   };
   action: 'allow' | 'deny' | 'ask';
   message?: string;
-  rate_limit?: {
-    max: number;
-    window: number;
-  };
 }
 
 export interface ArgumentMatcher {
@@ -47,7 +37,6 @@ export interface Decision {
   message?: string;
 }
 
-// Configuration types
 export interface Config {
   version: number;
   settings: {
@@ -60,11 +49,6 @@ export interface Config {
   secrets?: {
     patterns: SecretPattern[];
   };
-  integrity?: {
-    enabled: boolean;
-    hash_file: string;
-    on_change: 'allow' | 'deny' | 'ask';
-  };
 }
 
 export interface SecretPattern {
@@ -73,20 +57,29 @@ export interface SecretPattern {
   entropy_threshold?: number;
 }
 
-// Audit log types
 export interface LogEntry {
   ts: string;
   server?: string;
   method?: string;
-  tool?: string;
+  tool: string | undefined;
   args?: unknown;
   action: 'allow' | 'deny' | 'ask';
   rule: string | null;
   message?: string;
 }
 
-// Line buffer utility interface
 export interface LineBuffer {
   push(chunk: string): void;
   flush(): void;
+}
+
+export interface McpServerConfig {
+  command: string;
+  args: string[];
+  env?: Record<string, string>;
+}
+
+export interface McpConfigFile {
+  mcpServers?: Record<string, McpServerConfig>;
+  [key: string]: unknown;
 }

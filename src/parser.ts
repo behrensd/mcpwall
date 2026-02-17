@@ -5,9 +5,6 @@
 
 import type { JsonRpcMessage, LineBuffer } from './types.js';
 
-/**
- * Result of parsing a JSON-RPC line — either a single message, a batch, or null
- */
 export type ParseResult =
   | { type: 'single'; message: JsonRpcMessage }
   | { type: 'batch'; messages: JsonRpcMessage[] }
@@ -50,7 +47,6 @@ export function parseJsonRpcLineEx(line: string): ParseResult {
       return null;
     }
 
-    // Single message
     if (!parsed || typeof parsed !== 'object' || parsed.jsonrpc !== '2.0') {
       return null;
     }
@@ -74,25 +70,21 @@ export function createLineBuffer(onLine: (line: string) => void): LineBuffer {
     push(chunk: string): void {
       buffer += chunk;
 
-      // Prevent OOM from missing newlines (M1)
+      // Prevent OOM from missing newlines
       if (buffer.length > MAX_LINE_LENGTH && !buffer.includes('\n')) {
         process.stderr.write(`[mcpwall] Warning: discarding oversized message (${buffer.length} bytes)\n`);
         buffer = '';
         return;
       }
       const lines = buffer.split('\n');
-
-      // Keep the last (potentially incomplete) line in the buffer
       buffer = lines.pop() || '';
 
-      // Process all complete lines
       for (const line of lines) {
         if (line) {
           onLine(line);
         }
       }
     },
-    /** Process any remaining buffered content (call on stream end) */
     flush(): void {
       if (buffer.trim()) {
         onLine(buffer);

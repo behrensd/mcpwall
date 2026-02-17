@@ -5,9 +5,7 @@
 
 import type { Config, SecretPattern, Rule } from '../types.js';
 
-/**
- * Built-in secret patterns matching common API keys and tokens
- */
+/** Built-in secret patterns matching common API keys and tokens */
 export const DEFAULT_SECRET_PATTERNS: SecretPattern[] = [
   {
     name: 'aws-access-key',

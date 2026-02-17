@@ -25,37 +25,26 @@ export interface ProxyOptions {
 export function createProxy(options: ProxyOptions): ChildProcess {
   const { command, args, policyEngine, logger, logArgs = 'none' } = options;
 
-  // Spawn the real MCP server
   // inherit stderr so server's debug output goes to stderr
   const child = spawn(command, args, {
     stdio: ['pipe', 'pipe', 'inherit'],
-    env: { ...process.env }
   });
 
   let isShuttingDown = false;
 
-  // Handle spawn errors (e.g., command not found)
   child.on('error', (err) => {
     process.stderr.write(`[mcpwall] Error spawning ${command}: ${err.message}\n`);
     process.exit(1);
   });
 
-  /**
-   * Evaluate a single JSON-RPC message against the policy engine.
-   * Returns the decision and handles deny response/logging.
-   * Returns true if allowed, false if denied.
-   */
-  function evaluateMessage(msg: JsonRpcMessage): boolean {
-    const decision = policyEngine.evaluate(msg);
-
-    // Extract tool name for logging
+  function evaluateMessage(msg: JsonRpcMessage, decision: Decision): boolean {
     let toolName: string | undefined;
     if (msg.method === 'tools/call' && msg.params && typeof msg.params === 'object') {
       toolName = (msg.params as { name?: string }).name;
     }
 
     if (decision.action === 'deny') {
-      // Log the denial — redact args to avoid leaking secrets into logs
+      // Redact args to avoid leaking secrets into logs
       logger.log({
         ts: new Date().toISOString(),
         method: msg.method,
@@ -69,7 +58,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     }
 
     // Allow or ask (ask = allow in Phase 1)
-    // M6 fix: only log full args when explicitly configured
+    // Only log full args when explicitly configured
     const loggedArgs = logArgs === 'full' && msg.method === 'tools/call'
       ? (msg.params as { arguments?: unknown })?.arguments
       : undefined;
@@ -86,9 +75,6 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     return true;
   }
 
-  /**
-   * Build a JSON-RPC error response for a denied request
-   */
   function buildDenyError(msg: JsonRpcMessage, decision: Decision): object {
     return {
       jsonrpc: '2.0' as const,
@@ -105,7 +91,6 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     try {
       const result = parseJsonRpcLineEx(line);
 
-      // Not valid JSON-RPC — forward as-is
       if (!result) {
         if (child.stdin && !child.stdin.destroyed) {
           child.stdin.write(line + '\n');
@@ -113,28 +98,26 @@ export function createProxy(options: ProxyOptions): ChildProcess {
         return;
       }
 
-      // Single message
       if (result.type === 'single') {
         const msg = result.message;
         const decision = policyEngine.evaluate(msg);
 
         if (decision.action === 'deny') {
-          // Only send error for requests (messages with an id)
           if (msg.id !== undefined && msg.id !== null) {
             process.stdout.write(JSON.stringify(buildDenyError(msg, decision)) + '\n');
           }
-          evaluateMessage(msg); // logs the deny
+          evaluateMessage(msg, decision);
           return;
         }
 
-        evaluateMessage(msg); // logs the allow
+        evaluateMessage(msg, decision);
         if (child.stdin && !child.stdin.destroyed) {
           child.stdin.write(line + '\n');
         }
         return;
       }
 
-      // Batch message (C1 fix): evaluate each element individually
+      // Batch message: evaluate each element individually
       if (result.type === 'batch') {
         const forwarded: object[] = [];
         const errors: object[] = [];
@@ -143,25 +126,22 @@ export function createProxy(options: ProxyOptions): ChildProcess {
           const decision = policyEngine.evaluate(msg);
 
           if (decision.action === 'deny') {
-            evaluateMessage(msg); // logs the deny
-            // Build error response for requests (not notifications)
+            evaluateMessage(msg, decision);
             if (msg.id !== undefined && msg.id !== null) {
               errors.push(buildDenyError(msg, decision));
             }
           } else {
-            evaluateMessage(msg); // logs the allow
+            evaluateMessage(msg, decision);
             forwarded.push(msg);
           }
         }
 
-        // Send deny errors back to client
         if (errors.length === 1) {
           process.stdout.write(JSON.stringify(errors[0]) + '\n');
         } else if (errors.length > 1) {
           process.stdout.write(JSON.stringify(errors) + '\n');
         }
 
-        // Forward allowed messages to server
         if (forwarded.length > 0 && child.stdin && !child.stdin.destroyed) {
           if (forwarded.length === 1) {
             child.stdin.write(JSON.stringify(forwarded[0]) + '\n');
@@ -171,9 +151,10 @@ export function createProxy(options: ProxyOptions): ChildProcess {
         }
         return;
       }
-    } catch (err: any) {
-      // H1 fix: never crash from a single bad message
-      process.stderr.write(`[mcpwall] Error processing inbound message: ${err.message}\n`);
+    } catch (err) {
+      // Never crash from a single bad message
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`[mcpwall] Error processing inbound message: ${message}\n`);
       // Forward the raw line so the connection isn't silently broken
       if (child.stdin && !child.stdin.destroyed) {
         child.stdin.write(line + '\n');
@@ -198,7 +179,6 @@ export function createProxy(options: ProxyOptions): ChildProcess {
       // Phase 1: forward all responses without filtering
       process.stdout.write(line + '\n');
 
-      // Optional: parse and log at debug level
       const result = parseJsonRpcLineEx(line);
       if (result?.type === 'single') {
         const msg = result.message;
@@ -206,15 +186,16 @@ export function createProxy(options: ProxyOptions): ChildProcess {
           logger.log({
             ts: new Date().toISOString(),
             method: 'response',
+            tool: undefined,
             action: 'allow',
             rule: null,
             message: msg.error ? `Error: ${msg.error.message}` : undefined
           });
         }
       }
-    } catch (err: any) {
-      // Never crash from outbound parsing errors
-      process.stderr.write(`[mcpwall] Error processing outbound message: ${err.message}\n`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      process.stderr.write(`[mcpwall] Error processing outbound message: ${message}\n`);
       try { process.stdout.write(line + '\n'); } catch { /* EPIPE — client disconnected */ }
     }
   });
@@ -244,7 +225,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     }
   });
 
-  // Forward signals to child with escalation (M5 fix)
+  // Forward signals to child with escalation
   function handleSignal(sig: NodeJS.Signals) {
     if (!isShuttingDown && child && !child.killed) {
       isShuttingDown = true;

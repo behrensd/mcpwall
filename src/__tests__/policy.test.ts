@@ -1,7 +1,3 @@
-/**
- * Unit tests for PolicyEngine and config validation
- */
-
 import { describe, it, expect } from 'vitest';
 import { PolicyEngine } from '../engine/policy';
 import { configSchema } from '../config/schema';
@@ -570,7 +566,7 @@ describe('PolicyEngine', () => {
   });
 });
 
-describe('ReDoS protection (M2)', () => {
+describe('ReDoS protection', () => {
   const baseConfig = {
     version: 1,
     settings: { log_dir: '/tmp', log_level: 'info', default_action: 'allow' },

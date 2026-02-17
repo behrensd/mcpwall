@@ -12,10 +12,6 @@ import type { Config } from '../types.js';
 import { parseConfig } from './schema.js';
 import { DEFAULT_CONFIG } from './defaults.js';
 
-/**
- * Resolve config file paths
- * Returns both global and project config locations
- */
 export function resolveConfigPaths(): { global: string; project: string } {
   const home = homedir();
   const cwd = process.cwd();
@@ -26,30 +22,21 @@ export function resolveConfigPaths(): { global: string; project: string } {
   };
 }
 
-/**
- * Load and parse a single config file
- * Returns null if file doesn't exist or can't be read
- */
 async function loadConfigFile(path: string): Promise<Config | null> {
   try {
     const contents = await readFile(path, 'utf-8');
     const raw = parseYaml(contents);
     const config = parseConfig(raw);
     return config;
-  } catch (error: any) {
-    // ENOENT = file doesn't exist, which is fine
-    if (error.code === 'ENOENT') {
+  } catch (err) {
+    const error = err instanceof Error ? err : new Error(String(err));
+    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
       return null;
     }
-    // Re-throw validation errors or other issues
     throw new Error(`Failed to load config from ${path}: ${error.message}`);
   }
 }
 
-/**
- * Substitute variables in a string value
- * Supports ${HOME} and ${PROJECT_DIR}
- */
 function substituteVariables(value: string): string {
   return value
     .replace(/\$\{HOME\}/g, homedir())
@@ -57,9 +44,6 @@ function substituteVariables(value: string): string {
     .replace(/^~\//, join(homedir(), '/'));
 }
 
-/**
- * Recursively substitute variables in all string values in an object
- */
 function substituteInObject(obj: any): any {
   if (typeof obj === 'string') {
     return substituteVariables(obj);
@@ -89,15 +73,12 @@ function mergeConfigs(global: Config, project: Config): Config {
     },
     // Project rules first (higher priority), then global rules
     rules: [...project.rules, ...global.rules],
-    // Concatenate secret patterns
     secrets: {
       patterns: [
         ...(project.secrets?.patterns || []),
         ...(global.secrets?.patterns || [])
       ]
     },
-    // Project integrity settings override global
-    integrity: project.integrity || global.integrity
   };
 }
 
@@ -131,19 +112,16 @@ async function loadBuiltinDefaultRules(): Promise<Config> {
  * Otherwise, look for global and project configs and merge them
  */
 export async function loadConfig(configPath?: string): Promise<Config> {
-  // If specific config path provided, load only that
   if (configPath) {
     const resolved = resolve(configPath);
     const config = await loadConfigFile(resolved);
     if (!config) {
       throw new Error(`Config file not found: ${resolved}`);
     }
-    // Apply variable substitution
     const substituted = substituteInObject(config);
     return substituted;
   }
 
-  // Otherwise, discover and merge global + project configs
   const paths = resolveConfigPaths();
   const [globalConfig, projectConfig] = await Promise.all([
     loadConfigFile(paths.global),
@@ -153,20 +131,15 @@ export async function loadConfig(configPath?: string): Promise<Config> {
   let config: Config;
 
   if (projectConfig && globalConfig) {
-    // Merge both configs
     config = mergeConfigs(globalConfig, projectConfig);
   } else if (projectConfig) {
-    // Only project config exists
     config = projectConfig;
   } else if (globalConfig) {
-    // Only global config exists
     config = globalConfig;
   } else {
-    // No config files found — try loading built-in default rules
     config = await loadBuiltinDefaultRules();
   }
 
-  // Apply variable substitution to final merged config
   const substituted = substituteInObject(config);
   return substituted;
 }

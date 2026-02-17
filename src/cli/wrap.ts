@@ -6,28 +6,14 @@ import { readFile, writeFile } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
 import { join } from 'node:path';
-
-interface McpServerConfig {
-  command: string;
-  args: string[];
-  env?: Record<string, string>;
-}
-
-interface McpConfigFile {
-  mcpServers?: Record<string, McpServerConfig>;
-  [key: string]: unknown;
-}
+import type { McpServerConfig, McpConfigFile } from '../types.js';
 
 const CONFIG_PATHS = [
   () => join(homedir(), '.claude.json'),
   () => join(process.cwd(), '.mcp.json'),
 ];
 
-/**
- * Wrap a specific MCP server by name
- */
 export async function runWrap(serverName: string): Promise<void> {
-  // Search all config files for the server
   for (const getPath of CONFIG_PATHS) {
     const configPath = getPath();
     if (!existsSync(configPath)) continue;
@@ -45,13 +31,11 @@ export async function runWrap(serverName: string): Promise<void> {
 
     const server = config.mcpServers[serverName];
 
-    // Check if already wrapped
     if (server.command === 'npx' && server.args.includes('mcpwall')) {
       process.stderr.write(`[mcpwall] ${serverName} is already wrapped in ${configPath}\n`);
       return;
     }
 
-    // Wrap it
     config.mcpServers[serverName] = {
       command: 'npx',
       args: ['-y', 'mcpwall', '--', server.command, ...server.args],
@@ -65,7 +49,6 @@ export async function runWrap(serverName: string): Promise<void> {
     return;
   }
 
-  // Not found
   process.stderr.write(`[mcpwall] Server "${serverName}" not found in any config file.\n`);
   process.stderr.write(`Searched:\n`);
   for (const getPath of CONFIG_PATHS) {

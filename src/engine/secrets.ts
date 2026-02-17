@@ -30,7 +30,6 @@ export function compileSecretPatterns(patterns: SecretPattern[]): CompiledSecret
  */
 export function scanForSecrets(value: string, patterns: CompiledSecretPattern[]): string | null {
   for (const pattern of patterns) {
-    // Reset lastIndex in case regex has global flag
     pattern.regex.lastIndex = 0;
     const match = pattern.regex.exec(value);
 
@@ -56,12 +55,10 @@ export function scanForSecrets(value: string, patterns: CompiledSecretPattern[])
  * Returns the name of the first matched pattern, or null
  */
 export function deepScanObject(obj: unknown, patterns: CompiledSecretPattern[]): string | null {
-  // Base case: scan strings
   if (typeof obj === 'string') {
     return scanForSecrets(obj, patterns);
   }
 
-  // Recursive case: arrays
   if (Array.isArray(obj)) {
     for (const item of obj) {
       const found = deepScanObject(item, patterns);
@@ -71,7 +68,6 @@ export function deepScanObject(obj: unknown, patterns: CompiledSecretPattern[]):
     }
   }
 
-  // Recursive case: objects
   if (obj && typeof obj === 'object') {
     for (const value of Object.values(obj)) {
       const found = deepScanObject(value, patterns);
@@ -94,13 +90,11 @@ export function shannonEntropy(str: string): number {
     return 0;
   }
 
-  // Count character frequencies
   const freq: Record<string, number> = {};
   for (const char of str) {
     freq[char] = (freq[char] || 0) + 1;
   }
 
-  // Calculate entropy: -Σ(p * log2(p))
   const len = str.length;
   let entropy = 0;
 

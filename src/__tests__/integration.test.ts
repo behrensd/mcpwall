@@ -1,8 +1,3 @@
-/**
- * Integration tests for mcpwall proxy
- * Spawns the built CLI with an echo MCP server and verifies end-to-end behavior
- */
-
 import { describe, it, expect, beforeAll } from 'vitest';
 import { spawn } from 'node:child_process';
 import { join, dirname } from 'node:path';
@@ -158,7 +153,7 @@ function sendAndCollect(
 
 describe('Integration: proxy end-to-end', () => {
   beforeAll(async () => {
-    // Ensure dist exists
+    // Check that dist exists
     if (!existsSync(distEntry)) {
       throw new Error('dist/index.js not found — run npm run build first');
     }

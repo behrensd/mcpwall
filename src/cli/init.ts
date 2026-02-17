@@ -10,20 +10,8 @@ import { join } from 'node:path';
 import { createInterface } from 'node:readline/promises';
 import { stringify as yamlStringify } from 'yaml';
 import { DEFAULT_CONFIG } from '../config/defaults.js';
+import type { McpServerConfig, McpConfigFile } from '../types.js';
 
-interface McpServerConfig {
-  command: string;
-  args: string[];
-  env?: Record<string, string>;
-}
-
-interface McpConfig {
-  mcpServers: Record<string, McpServerConfig>;
-}
-
-/**
- * Run the interactive setup wizard
- */
 export async function runInit(): Promise<void> {
   process.stderr.write('\n🔒 mcpwall setup wizard\n\n');
 
@@ -33,24 +21,23 @@ export async function runInit(): Promise<void> {
   });
 
   try {
-    // Step 1: Find existing MCP configurations
     const configPaths = [
       { path: join(homedir(), '.claude.json'), name: 'Claude Code global config' },
       { path: join(process.cwd(), '.mcp.json'), name: 'Claude Code project config' }
     ];
 
-    const foundConfigs: Array<{ path: string; name: string; config: McpConfig }> = [];
+    const foundConfigs: Array<{ path: string; name: string; config: McpConfigFile }> = [];
 
     for (const { path, name } of configPaths) {
       if (existsSync(path)) {
         try {
           const contents = await readFile(path, 'utf-8');
-          const config = JSON.parse(contents) as McpConfig;
+          const config = JSON.parse(contents) as McpConfigFile;
           if (config.mcpServers && Object.keys(config.mcpServers).length > 0) {
             foundConfigs.push({ path, name, config });
           }
         } catch (error) {
-          process.stderr.write(`Warning: Could not parse ${path}\n`);
+          process.stderr.write(`[mcpwall] Warning: Could not parse ${path}\n`);
         }
       }
     }
@@ -67,13 +54,12 @@ export async function runInit(): Promise<void> {
       return;
     }
 
-    // Step 2: Display found servers
     process.stderr.write('Found MCP servers:\n\n');
     const allServers: Array<{ configPath: string; serverName: string; config: McpServerConfig }> = [];
 
     for (const { path, name, config } of foundConfigs) {
       process.stderr.write(`In ${name} (${path}):\n`);
-      for (const [serverName, serverConfig] of Object.entries(config.mcpServers)) {
+      for (const [serverName, serverConfig] of Object.entries(config.mcpServers!)) {
         allServers.push({ configPath: path, serverName, config: serverConfig });
         const commandStr = `${serverConfig.command} ${serverConfig.args.join(' ')}`;
         process.stderr.write(`  [${allServers.length}] ${serverName}: ${commandStr}\n`);
@@ -81,7 +67,6 @@ export async function runInit(): Promise<void> {
       process.stderr.write('\n');
     }
 
-    // Step 3: Ask which servers to wrap
     const answer = await rl.question(
       'Enter server numbers to wrap (comma-separated, or "all" for all): '
     );
@@ -102,36 +87,31 @@ export async function runInit(): Promise<void> {
       return;
     }
 
-    // Step 4: Wrap selected servers
     process.stderr.write('\nWrapping servers with mcpwall...\n\n');
 
     for (const index of selectedIndices) {
       const { configPath, serverName, config } = allServers[index];
 
-      // Check if already wrapped
       if (config.command === 'npx' && config.args.includes('mcpwall')) {
         process.stderr.write(`  ✓ ${serverName} is already wrapped\n`);
         continue;
       }
 
-      // Wrap the configuration
       const wrappedConfig: McpServerConfig = {
         command: 'npx',
         args: ['-y', 'mcpwall', '--', config.command, ...config.args],
         env: config.env
       };
 
-      // Update the config file
       const configContents = await readFile(configPath, 'utf-8');
-      const fullConfig = JSON.parse(configContents) as McpConfig;
-      fullConfig.mcpServers[serverName] = wrappedConfig;
+      const fullConfig = JSON.parse(configContents) as McpConfigFile;
+      fullConfig.mcpServers![serverName] = wrappedConfig;
 
       await writeFile(configPath, JSON.stringify(fullConfig, null, 2), 'utf-8');
 
       process.stderr.write(`  ✓ Wrapped ${serverName}\n`);
     }
 
-    // Step 5: Create default config if it doesn't exist
     const firewallConfigDir = join(homedir(), '.mcpwall');
     const firewallConfigPath = join(firewallConfigDir, 'config.yml');
 

@@ -29,37 +29,27 @@ export class Logger {
     this.logDir = this.expandPath(options.logDir);
     this.logLevel = LOG_LEVELS[options.logLevel] || LOG_LEVELS.info;
 
-    // Create log directory if it doesn't exist
     if (!fs.existsSync(this.logDir)) {
       fs.mkdirSync(this.logDir, { recursive: true });
     }
   }
 
-  /**
-   * Log an entry to both stderr and the daily log file
-   */
   log(entry: LogEntry): void {
     const level = this.getLogLevel(entry.action);
     if (LOG_LEVELS[level] < this.logLevel) {
       return;
     }
 
-    // Ensure timestamp
+    // Add default timestamp
     const fullEntry: LogEntry = {
       ...entry,
       ts: entry.ts || new Date().toISOString()
     };
 
-    // Write JSON line to file
     this.writeToFile(fullEntry);
-
-    // Write human-readable summary to stderr
     this.writeToStderr(fullEntry);
   }
 
-  /**
-   * Close the log file handle
-   */
   close(): void {
     if (this.writeStream) {
       this.writeStream.end();
@@ -84,12 +74,10 @@ export class Logger {
       });
     }
 
-    // Write JSON line
     const line = JSON.stringify(entry) + '\n';
     if (this.writeStream) {
       this.writeStream.write(line);
     } else {
-      // Fallback to sync write if stream isn't ready
       fs.appendFileSync(logFile, line);
     }
   }
