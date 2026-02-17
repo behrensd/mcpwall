@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.behrensd/mcpwall",
+  "title": "mcpwall",
+  "description": "iptables for MCP — blocks dangerous tool calls, scans for secrets, logs everything.",
+  "repository": {
+    "url": "https://github.com/behrensd/mcp-firewall",
+    "source": "github"
+  },
+  "version": "0.1.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "registryBaseUrl": "https://registry.npmjs.org",
+      "identifier": "mcpwall",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}

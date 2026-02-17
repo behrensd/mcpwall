@@ -1,8 +1,13 @@
 # mcpwall
 
-Deterministic security proxy for [MCP](https://modelcontextprotocol.io) tool calls. Sits between your AI coding tool (Claude Code, Cursor, Windsurf) and MCP servers, intercepting every JSON-RPC message and enforcing YAML-defined policies — no LLM, no cloud, pure rule-based.
+[![npm version](https://img.shields.io/npm/v/mcpwall)](https://www.npmjs.com/package/mcpwall)
+[![CI](https://github.com/behrensd/mcp-firewall/actions/workflows/ci.yml/badge.svg)](https://github.com/behrensd/mcp-firewall/actions/workflows/ci.yml)
+[![Node.js](https://img.shields.io/node/v/mcpwall)](https://nodejs.org)
+[![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue)](./LICENSE)
 
-Think **iptables**, but for MCP tool calls.
+**iptables for MCP.** Blocks dangerous tool calls, scans for secret leakage, logs everything. No AI, no cloud, pure rules.
+
+Sits between your AI coding tool (Claude Code, Cursor, Windsurf) and MCP servers, intercepting every JSON-RPC message and enforcing YAML-defined policies.
 
 ## Why
 

@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.2 (2026-02-17)
+
+### Registry & Discovery
+
+- Add `server.json` for official MCP Registry (`registry.modelcontextprotocol.io`)
+- Add `glama.json` for Glama directory claim
+- Add `mcpName` field to `package.json` (required by MCP Registry)
+- Add badges to README (npm version, CI, Node.js, license)
+- Update homepage to `mcpwall.dev`
+
 ## 0.1.1 (2026-02-17)
 
 ### Bug Fixes

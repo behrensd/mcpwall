@@ -13,6 +13,9 @@ specs/
 # Landing page (deployed separately)
 site/
 
+# MCP Registry auth tokens
+.mcpregistry_*
+
 # IDE
 .vscode/
 .idea/
