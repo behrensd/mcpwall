@@ -1,0 +1,710 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>What mcpwall Does and Doesn't Protect Against — mcpwall</title>
+  <meta name="description" content="A transparent look at mcpwall's security coverage: 8 attack classes blocked, 13 known limitations, and the assumptions we make.">
+  <meta property="og:title" content="What mcpwall Does and Doesn't Protect Against">
+  <meta property="og:description" content="A transparent look at mcpwall's security coverage. 8 attack classes blocked, 13 known limitations.">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="https://mcpwall.dev/blog/mcpwall-threat-model">
+  <meta property="og:site_name" content="mcpwall">
+  <meta property="article:published_time" content="2026-02-18">
+  <meta property="article:author" content="Dom Behrens">
+  <meta property="og:image" content="https://mcpwall.dev/og/blog-01-backdoor.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="What mcpwall Does and Doesn't Protect Against">
+  <meta name="twitter:description" content="A transparent look at mcpwall's security coverage. 8 attack classes blocked, 13 known limitations.">
+  <meta name="twitter:image" content="https://mcpwall.dev/og/blog-01-backdoor.png">
+  <link rel="canonical" href="https://mcpwall.dev/blog/mcpwall-threat-model">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    "headline": "What mcpwall Does and Doesn't Protect Against",
+    "description": "A transparent look at mcpwall's security coverage: 8 attack classes blocked, 13 known limitations, and the assumptions we make.",
+    "image": "https://mcpwall.dev/og/blog-01-backdoor.png",
+    "author": { "@type": "Person", "name": "Dom Behrens" },
+    "publisher": { "@type": "Organization", "name": "mcpwall", "url": "https://mcpwall.dev" },
+    "datePublished": "2026-02-18",
+    "mainEntityOfPage": "https://mcpwall.dev/blog/mcpwall-threat-model"
+  }
+  </script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            display: ['Syne', 'sans-serif'],
+            body: ['Outfit', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfeff',
+              100: '#cffafe',
+              200: '#a5f3fc',
+              300: '#67e8f9',
+              400: '#22d3ee',
+              500: '#06b6d4',
+              600: '#0891b2',
+              700: '#0e7490',
+            },
+            surface: {
+              900: '#09090b',
+              800: '#0f0f13',
+              700: '#18181b',
+              600: '#1e1e24',
+              500: '#27272a',
+            },
+            danger: {
+              400: '#f87171',
+              500: '#ef4444',
+              600: '#dc2626',
+              700: '#b91c1c',
+              900: '#450a0a',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background-color: #09090b;
+      color: #e4e4e7;
+      font-family: 'Outfit', sans-serif;
+      overflow-x: hidden;
+    }
+
+    .dot-grid {
+      background-image: radial-gradient(circle, rgba(255,255,255,0.03) 1px, transparent 1px);
+      background-size: 24px 24px;
+    }
+
+    /* Progress bar */
+    #progress-bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 3px;
+      width: 0%;
+      z-index: 100;
+      background: #06b6d4;
+      transition: width 0.1s linear;
+    }
+
+    /* Section line */
+    .section-line {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06) 50%, transparent);
+    }
+
+    .section-line-brand {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(6,182,212,0.12) 50%, transparent);
+    }
+
+    .section-line-danger {
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(239,68,68,0.12) 50%, transparent);
+    }
+
+    /* Fade up */
+    .fade-up {
+      opacity: 0;
+      transform: translateY(24px);
+      transition: opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1), transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .fade-up.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .fade-up-delay-1 { transition-delay: 100ms; }
+    .fade-up-delay-2 { transition-delay: 200ms; }
+
+    /* stderr callout */
+    .stderr-callout {
+      border-left: 3px solid;
+      padding: 20px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .stderr-info {
+      border-color: #06b6d4;
+      background: rgba(6, 182, 212, 0.04);
+      color: #67e8f9;
+    }
+
+    .stderr-tag {
+      font-size: 10px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.6;
+      margin-bottom: 8px;
+      display: block;
+    }
+
+    /* Status badges */
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 3px 10px;
+      border-radius: 6px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+
+    .status-covered {
+      background: rgba(6, 182, 212, 0.1);
+      color: #67e8f9;
+      border: 1px solid rgba(6, 182, 212, 0.15);
+    }
+
+    .status-not-covered {
+      background: rgba(239, 68, 68, 0.08);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.12);
+    }
+
+    .status-partial {
+      background: rgba(250, 204, 21, 0.08);
+      color: #fbbf24;
+      border: 1px solid rgba(250, 204, 21, 0.12);
+    }
+
+    /* Code inline */
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.85em;
+      background: rgba(255,255,255,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: #d4d4d8;
+    }
+
+    /* Prose */
+    .prose-body {
+      color: #a1a1aa;
+      line-height: 1.75;
+      font-size: 16px;
+    }
+
+    .prose-body strong {
+      color: #e4e4e7;
+      font-weight: 500;
+    }
+
+    .prose-link {
+      color: #22d3ee;
+      text-decoration: underline;
+      text-decoration-color: rgba(34, 211, 238, 0.3);
+      text-underline-offset: 3px;
+      transition: text-decoration-color 0.2s ease;
+    }
+    .prose-link:hover {
+      text-decoration-color: rgba(34, 211, 238, 0.8);
+    }
+
+    /* Card */
+    .tm-card {
+      background: rgba(255,255,255,0.02);
+      border: 1px solid rgba(255,255,255,0.05);
+      border-radius: 10px;
+      padding: 20px;
+      transition: all 0.2s ease;
+    }
+    .tm-card:hover {
+      background: rgba(255,255,255,0.04);
+      border-color: rgba(255,255,255,0.08);
+    }
+
+    /* Architecture box */
+    .arch-box {
+      background: #0c0c10;
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 12px;
+      padding: 28px 24px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 2;
+    }
+
+    .arch-node {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: 500;
+      white-space: nowrap;
+    }
+
+    /* Split grid */
+    .split-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 24px;
+    }
+    @media (min-width: 768px) {
+      .split-grid { grid-template-columns: 1fr 1fr; }
+    }
+
+    /* Stagger */
+    .stagger > * {
+      opacity: 0;
+      transform: translateY(12px);
+      transition: all 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    .stagger.visible > *:nth-child(1) { transition-delay: 0ms; opacity: 1; transform: translateY(0); }
+    .stagger.visible > *:nth-child(2) { transition-delay: 80ms; opacity: 1; transform: translateY(0); }
+    .stagger.visible > *:nth-child(3) { transition-delay: 160ms; opacity: 1; transform: translateY(0); }
+    .stagger.visible > *:nth-child(4) { transition-delay: 240ms; opacity: 1; transform: translateY(0); }
+    .stagger.visible > *:nth-child(5) { transition-delay: 320ms; opacity: 1; transform: translateY(0); }
+    .stagger.visible > *:nth-child(6) { transition-delay: 400ms; opacity: 1; transform: translateY(0); }
+    .stagger.visible > *:nth-child(7) { transition-delay: 480ms; opacity: 1; transform: translateY(0); }
+    .stagger.visible > *:nth-child(8) { transition-delay: 560ms; opacity: 1; transform: translateY(0); }
+
+    /* CTA box */
+    .cta-box {
+      background: rgba(6, 182, 212, 0.04);
+      border: 1px solid rgba(6, 182, 212, 0.12);
+      border-radius: 12px;
+      padding: 28px 32px;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.12); }
+
+    @media (max-width: 768px) {
+      .hide-mobile { display: none; }
+    }
+
+    /* Wide screen marginalia */
+    @media (min-width: 1280px) {
+      .with-marginalia {
+        display: grid;
+        grid-template-columns: 1fr 200px;
+        gap: 48px;
+        align-items: start;
+      }
+    }
+
+    .marginalia {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      line-height: 1.6;
+      color: #52525b;
+      border-left: 1px solid rgba(255,255,255,0.06);
+      padding-left: 16px;
+    }
+  </style>
+</head>
+<body class="dot-grid">
+
+  <div id="progress-bar"></div>
+
+  <!-- Nav -->
+  <nav class="fixed top-0 left-0 right-0 z-50 flex items-center justify-between px-6 md:px-12 py-4" style="background: rgba(9,9,11,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid rgba(255,255,255,0.04);">
+    <div class="flex items-center gap-4">
+      <a href="https://mcpwall.dev" class="flex items-center gap-2 text-zinc-500 hover:text-zinc-300 transition-colors">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5M12 19l-7-7 7-7"/></svg>
+      </a>
+      <a href="#" onclick="window.scrollTo({top:0,behavior:'smooth'});return false;" class="font-display font-800 text-lg tracking-tight text-zinc-100 hover:text-white transition-colors">mcpwall</a>
+      <span class="text-zinc-600 font-mono text-xs">/</span>
+      <span class="text-zinc-500 font-mono text-xs">blog</span>
+    </div>
+    <div class="flex items-center gap-6">
+      <a href="https://mcpwall.dev" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors font-body hidden sm:block">Home</a>
+      <a href="https://mcpwall.dev/threat-model" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors font-body hidden sm:block">Full Threat Model</a>
+      <a href="https://github.com/behrensd/mcp-firewall" target="_blank" class="text-sm text-zinc-500 hover:text-zinc-300 transition-colors font-body flex items-center gap-1.5">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+        <span class="hidden sm:inline">GitHub</span>
+      </a>
+    </div>
+  </nav>
+
+  <article class="relative z-10">
+
+    <!-- ========== HERO ========== -->
+    <header class="min-h-[70vh] flex flex-col justify-end px-6 pb-16 pt-32 max-w-4xl mx-auto">
+      <div class="fade-up">
+        <div class="flex items-center gap-3 mb-6">
+          <span class="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-brand-500/10 border border-brand-500/20 font-mono text-[11px] text-brand-400 tracking-wide">
+            THREAT MODEL
+          </span>
+          <time datetime="2026-02-18" class="font-mono text-[11px] text-zinc-600 tracking-wide">2026-02-18</time>
+        </div>
+      </div>
+
+      <h1 class="font-display font-800 text-4xl sm:text-5xl md:text-6xl leading-[1.05] tracking-tight mb-6 fade-up fade-up-delay-1">
+        What mcpwall Does<br>and Doesn&rsquo;t<br>Protect Against
+      </h1>
+
+      <div class="max-w-2xl fade-up fade-up-delay-2">
+        <div class="stderr-callout stderr-info rounded-lg">
+          <span class="stderr-tag">transparency</span>
+          Security tools that hide their limitations aren&rsquo;t security tools. Here&rsquo;s what mcpwall covers, what it doesn&rsquo;t, and what we&rsquo;re building next.
+        </div>
+      </div>
+
+      <div class="mt-8 fade-up" style="transition-delay: 300ms">
+        <a href="https://mcpwall.dev/threat-model" class="prose-link font-mono text-sm">Read the full threat model reference &rarr;</a>
+      </div>
+    </header>
+
+    <div class="section-line"></div>
+
+    <!-- ========== THE SHORT VERSION ========== -->
+    <section class="px-6 py-20 md:py-28">
+      <div class="max-w-4xl mx-auto">
+        <div class="with-marginalia">
+          <div class="fade-up">
+            <div class="font-mono text-[11px] text-brand-500/60 tracking-widest uppercase mb-4">01 / The Short Version</div>
+            <h2 class="font-display font-700 text-2xl md:text-3xl tracking-tight text-zinc-100 mb-6">Where mcpwall sits</h2>
+
+            <div class="prose-body space-y-4 mb-8 max-w-2xl">
+              <p>
+                mcpwall is a transparent stdio proxy. It intercepts every JSON-RPC message from your AI coding tool to the MCP server. Rules are YAML, evaluated top-to-bottom, first match wins.
+              </p>
+              <p>
+                The key word is <strong>request firewall</strong>. In v0.1.x, mcpwall inspects what your AI agent <em>asks to do</em>. It does not yet inspect what the server <em>sends back</em>.
+              </p>
+            </div>
+
+            <div class="arch-box mb-8">
+              <div class="text-zinc-500 text-[11px] uppercase tracking-wider mb-3">Inbound &mdash; inspected &amp; filtered</div>
+              <div class="flex flex-wrap items-center gap-2 mb-3">
+                <span class="arch-node bg-zinc-800 text-zinc-300 text-[12px]">Claude Code</span>
+                <span class="text-zinc-600">&rarr;</span>
+                <span class="arch-node text-brand-300 text-[12px]" style="background: rgba(6,182,212,0.12); border: 1px solid rgba(6,182,212,0.2);">mcpwall</span>
+                <span class="text-zinc-600">&rarr;</span>
+                <span class="arch-node bg-zinc-800 text-zinc-300 text-[12px]">MCP Server</span>
+              </div>
+              <div class="text-zinc-500 text-[11px] uppercase tracking-wider mb-3 mt-4">Outbound &mdash; logged, not filtered</div>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="arch-node bg-zinc-800 text-zinc-300 text-[12px]">Claude Code</span>
+                <span class="text-zinc-600">&larr;</span>
+                <span class="arch-node bg-zinc-800/50 text-zinc-500 text-[12px]" style="border: 1px dashed rgba(255,255,255,0.08);">mcpwall (passthrough)</span>
+                <span class="text-zinc-600">&larr;</span>
+                <span class="arch-node bg-zinc-800 text-zinc-300 text-[12px]">MCP Server</span>
+              </div>
+            </div>
+          </div>
+
+          <aside class="marginalia hidden xl:block mt-2">
+            Response inspection is the #1 priority for v0.2.0. It will scan server responses for secrets before they reach the LLM.
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-line-brand"></div>
+
+    <!-- ========== WHAT'S COVERED ========== -->
+    <section class="px-6 py-20 md:py-28">
+      <div class="max-w-4xl mx-auto">
+        <div class="font-mono text-[11px] text-brand-500/60 tracking-widest uppercase mb-4 fade-up">02 / What&rsquo;s Covered</div>
+        <h2 class="font-display font-700 text-2xl md:text-3xl tracking-tight text-zinc-100 mb-4 fade-up">8 attack classes blocked out of the box</h2>
+        <p class="prose-body mb-8 max-w-2xl fade-up">
+          No configuration needed. These default rules apply automatically and scan every argument value recursively.
+        </p>
+
+        <div class="grid sm:grid-cols-2 gap-3 stagger" id="covered-grid">
+          <div class="tm-card">
+            <span class="status status-covered mb-3">Covered</span>
+            <div class="font-mono text-[13px] text-zinc-200 font-500 mt-2">SSH key theft</div>
+            <div class="text-zinc-500 text-sm mt-1">Blocks <code>.ssh/</code>, <code>id_rsa</code>, <code>id_ed25519</code>, <code>id_ecdsa</code> in any argument.</div>
+          </div>
+
+          <div class="tm-card">
+            <span class="status status-covered mb-3">Covered</span>
+            <div class="font-mono text-[13px] text-zinc-200 font-500 mt-2">.env file access</div>
+            <div class="text-zinc-500 text-sm mt-1">Blocks <code>.env</code> and all variants (<code>.env.local</code>, <code>.env.production</code>).</div>
+          </div>
+
+          <div class="tm-card">
+            <span class="status status-covered mb-3">Covered</span>
+            <div class="font-mono text-[13px] text-zinc-200 font-500 mt-2">Credential files</div>
+            <div class="text-zinc-500 text-sm mt-1">AWS credentials, <code>.npmrc</code>, Docker config, kube config, <code>.gnupg</code>.</div>
+          </div>
+
+          <div class="tm-card">
+            <span class="status status-covered mb-3">Covered</span>
+            <div class="font-mono text-[13px] text-zinc-200 font-500 mt-2">Browser data</div>
+            <div class="text-zinc-500 text-sm mt-1">Chrome, Firefox, Safari profile paths, cookies, login data stores.</div>
+          </div>
+
+          <div class="tm-card">
+            <span class="status status-covered mb-3">Covered</span>
+            <div class="font-mono text-[13px] text-zinc-200 font-500 mt-2">Destructive commands</div>
+            <div class="text-zinc-500 text-sm mt-1"><code>rm -rf</code>, <code>mkfs</code>, <code>dd if=</code>, <code>format C:</code> and variants.</div>
+          </div>
+
+          <div class="tm-card">
+            <span class="status status-covered mb-3">Covered</span>
+            <div class="font-mono text-[13px] text-zinc-200 font-500 mt-2">Pipe-to-shell</div>
+            <div class="text-zinc-500 text-sm mt-1"><code>curl</code>/<code>wget</code>/<code>fetch</code> piped to <code>bash</code>/<code>sh</code>/<code>python</code>/<code>node</code>.</div>
+          </div>
+
+          <div class="tm-card">
+            <span class="status status-covered mb-3">Covered</span>
+            <div class="font-mono text-[13px] text-zinc-200 font-500 mt-2">Reverse shells</div>
+            <div class="text-zinc-500 text-sm mt-1">netcat, <code>/dev/tcp/</code>, <code>bash -i</code>, <code>mkfifo</code>, <code>socat</code>.</div>
+          </div>
+
+          <div class="tm-card">
+            <span class="status status-covered mb-3">Covered</span>
+            <div class="font-mono text-[13px] text-zinc-200 font-500 mt-2">Secret / API key leakage</div>
+            <div class="text-zinc-500 text-sm mt-1">10 patterns (AWS, GitHub, OpenAI, Stripe, etc.) + Shannon entropy.</div>
+          </div>
+        </div>
+
+        <p class="prose-body mt-6 text-sm fade-up">
+          Plus: JSON-RPC batch bypass fixed (C1), ReDoS mitigation at config load, symlink resolution for path traversal, crash protection with fail-open behavior.
+        </p>
+      </div>
+    </section>
+
+    <div class="section-line-danger"></div>
+
+    <!-- ========== WHAT'S NOT COVERED ========== -->
+    <section class="px-6 py-20 md:py-28">
+      <div class="max-w-4xl mx-auto">
+        <div class="with-marginalia">
+          <div>
+            <div class="font-mono text-[11px] text-danger-400/60 tracking-widest uppercase mb-4 fade-up">03 / What&rsquo;s Not Covered</div>
+            <h2 class="font-display font-700 text-2xl md:text-3xl tracking-tight text-zinc-100 mb-4 fade-up">Known limitations</h2>
+            <p class="prose-body mb-8 max-w-2xl fade-up">
+              These are attack classes that mcpwall v0.1.x does <strong>not</strong> mitigate. We&rsquo;re publishing them because hiding limitations is worse than having them.
+            </p>
+
+            <div class="space-y-3 stagger" id="not-covered-list">
+              <!-- HIGH -->
+              <div class="tm-card" style="border-color: rgba(239,68,68,0.1);">
+                <div class="flex items-start gap-3">
+                  <span class="status status-not-covered mt-0.5 shrink-0">HIGH</span>
+                  <div>
+                    <div class="font-body text-zinc-200 font-500">Response-side attacks</div>
+                    <div class="text-zinc-500 text-sm mt-1">Server responses are forwarded unfiltered. A compromised server can return secrets or malicious content in tool results. <span class="text-brand-400/80">Planned: v0.2.0.</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tm-card" style="border-color: rgba(239,68,68,0.1);">
+                <div class="flex items-start gap-3">
+                  <span class="status status-not-covered mt-0.5 shrink-0">HIGH</span>
+                  <div>
+                    <div class="font-body text-zinc-200 font-500">Base64 / URL encoding bypass</div>
+                    <div class="text-zinc-500 text-sm mt-1">Rules match literal strings only. Base64-encoded secrets or URL-encoded commands pass through. Decoding before matching would add latency and complexity.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tm-card" style="border-color: rgba(239,68,68,0.1);">
+                <div class="flex items-start gap-3">
+                  <span class="status status-not-covered mt-0.5 shrink-0">HIGH</span>
+                  <div>
+                    <div class="font-body text-zinc-200 font-500">Rate limiting / DoS</div>
+                    <div class="text-zinc-500 text-sm mt-1">No throttling on tool call volume. A runaway agent can make unlimited calls. <span class="text-brand-400/80">Planned: v0.4.0.</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- MEDIUM -->
+              <div class="tm-card">
+                <div class="flex items-start gap-3">
+                  <span class="status status-partial mt-0.5 shrink-0">MEDIUM</span>
+                  <div>
+                    <div class="font-body text-zinc-200 font-500">Tool description poisoning / rug pulls</div>
+                    <div class="text-zinc-500 text-sm mt-1">mcpwall does not inspect tool metadata from <code>tools/list</code>. A server can change descriptions after trust is established. <span class="text-brand-400/80">Planned: v0.3.0.</span></div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tm-card">
+                <div class="flex items-start gap-3">
+                  <span class="status status-partial mt-0.5 shrink-0">MEDIUM</span>
+                  <div>
+                    <div class="font-body text-zinc-200 font-500">Prompt injection</div>
+                    <div class="text-zinc-500 text-sm mt-1">mcpwall can&rsquo;t detect semantic manipulation of the LLM. It sees the resulting tool call, not the manipulation&thinsp;&mdash;&thinsp;but it may still catch the dangerous arguments.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tm-card">
+                <div class="flex items-start gap-3">
+                  <span class="status status-partial mt-0.5 shrink-0">MEDIUM</span>
+                  <div>
+                    <div class="font-body text-zinc-200 font-500">Shell metacharacter bypass</div>
+                    <div class="text-zinc-500 text-sm mt-1">Pipes (<code>|</code>) caught. Semicolons (<code>;</code>), <code>&amp;&amp;</code>, backticks, and <code>$()</code> not covered by default rules. Custom rules can address this.</div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="tm-card">
+                <div class="flex items-start gap-3">
+                  <span class="status status-partial mt-0.5 shrink-0">MEDIUM</span>
+                  <div>
+                    <div class="font-body text-zinc-200 font-500">Unicode / DNS exfiltration / env leakage</div>
+                    <div class="text-zinc-500 text-sm mt-1">Homoglyph attacks, DNS subdomain encoding, and inherited environment variables are out of scope for v0.1.x.</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <aside class="marginalia hidden xl:block mt-12">
+            For the complete list with low-severity items, code references, and component analysis, see the <a href="https://mcpwall.dev/threat-model" class="prose-link text-[11px]">full threat model</a>.
+          </aside>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-line"></div>
+
+    <!-- ========== DEFENSE IN DEPTH ========== -->
+    <section class="px-6 py-20 md:py-28">
+      <div class="max-w-4xl mx-auto">
+        <div class="font-mono text-[11px] text-brand-500/60 tracking-widest uppercase mb-4 fade-up">04 / Defense in Depth</div>
+        <h2 class="font-display font-700 text-2xl md:text-3xl tracking-tight text-zinc-100 mb-4 fade-up">One layer, not the whole stack</h2>
+        <p class="prose-body mb-8 max-w-2xl fade-up">
+          mcpwall is not a complete security solution. It&rsquo;s one layer in a defense-in-depth strategy. We recommend combining it with:
+        </p>
+
+        <div class="grid sm:grid-cols-3 gap-4 stagger" id="depth-cards">
+          <div class="tm-card">
+            <div class="font-mono text-[11px] text-zinc-600 tracking-wider mb-2">LAYER 1</div>
+            <div class="font-body text-zinc-200 font-500">Install-time scanning</div>
+            <div class="text-zinc-500 text-sm mt-2">Check tool descriptions for suspicious content before you use a server. (mcp-scan, etc.)</div>
+          </div>
+
+          <div class="tm-card" style="border-color: rgba(6,182,212,0.15); background: rgba(6,182,212,0.03);">
+            <div class="font-mono text-[11px] text-brand-500/60 tracking-wider mb-2">LAYER 2</div>
+            <div class="font-body text-brand-300 font-500">Runtime firewall</div>
+            <div class="text-zinc-500 text-sm mt-2">Enforce policy on every tool call as it happens. Catch runtime arguments, secrets, dangerous commands. (mcpwall)</div>
+          </div>
+
+          <div class="tm-card">
+            <div class="font-mono text-[11px] text-zinc-600 tracking-wider mb-2">LAYER 3</div>
+            <div class="font-body text-zinc-200 font-500">Container isolation</div>
+            <div class="text-zinc-500 text-sm mt-2">Limit blast radius by running MCP servers in containers or sandboxes.</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <div class="section-line-brand"></div>
+
+    <!-- ========== WHAT'S NEXT ========== -->
+    <section class="px-6 py-20 md:py-28">
+      <div class="max-w-4xl mx-auto">
+        <div class="font-mono text-[11px] text-brand-500/60 tracking-widest uppercase mb-4 fade-up">05 / What&rsquo;s Next</div>
+        <h2 class="font-display font-700 text-2xl md:text-3xl tracking-tight text-zinc-100 mb-4 fade-up">Closing the gaps</h2>
+        <p class="prose-body mb-8 max-w-2xl fade-up">
+          Every &ldquo;not covered&rdquo; item above has a plan:
+        </p>
+
+        <div class="space-y-3 fade-up">
+          <div class="flex items-center gap-4 py-3 border-b border-white/5">
+            <code class="text-brand-400 text-sm shrink-0">v0.2.0</code>
+            <span class="font-body text-zinc-300">Response inspection &mdash; scan server responses for secrets</span>
+          </div>
+          <div class="flex items-center gap-4 py-3 border-b border-white/5">
+            <code class="text-brand-400 text-sm shrink-0">v0.3.0</code>
+            <span class="font-body text-zinc-300">Tool integrity / rug pull detection &mdash; hash descriptions, detect changes</span>
+          </div>
+          <div class="flex items-center gap-4 py-3 border-b border-white/5">
+            <code class="text-brand-400/60 text-sm shrink-0">v0.3-4</code>
+            <span class="font-body text-zinc-300">HTTP/SSE proxy mode &mdash; support remote MCP servers</span>
+          </div>
+          <div class="flex items-center gap-4 py-3 border-b border-white/5">
+            <code class="text-brand-400/60 text-sm shrink-0">v0.4.0</code>
+            <span class="font-body text-zinc-300">Rate limiting &mdash; throttle excessive tool calls</span>
+          </div>
+        </div>
+
+        <div class="cta-box mt-12 fade-up">
+          <div class="font-body text-zinc-300 text-[15px] mb-3">
+            The full threat model includes component-by-component analysis, all default rule details, severity ratings, and the complete list of assumptions.
+          </div>
+          <a href="https://mcpwall.dev/threat-model" class="inline-flex items-center gap-2 font-mono text-sm text-brand-400 hover:text-brand-300 transition-colors">
+            Read the full threat model &rarr;
+          </a>
+        </div>
+      </div>
+    </section>
+
+  </article>
+
+  <!-- Footer -->
+  <footer class="px-6 py-16 border-t border-white/5">
+    <div class="max-w-5xl mx-auto">
+      <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-8">
+        <div>
+          <div class="font-body text-zinc-500 text-sm">
+            <span class="text-zinc-400 font-500">Dom Behrens</span> builds security tools for AI development workflows.
+          </div>
+          <div class="flex items-center gap-6 mt-4">
+            <a href="https://github.com/behrensd/mcp-firewall" target="_blank" class="text-xs text-zinc-600 hover:text-zinc-400 transition-colors font-mono">GitHub</a>
+            <a href="https://www.npmjs.com/package/mcpwall" target="_blank" class="text-xs text-zinc-600 hover:text-zinc-400 transition-colors font-mono">npm</a>
+            <a href="https://mcpwall.dev" class="text-xs text-zinc-600 hover:text-zinc-400 transition-colors font-mono">mcpwall.dev</a>
+          </div>
+        </div>
+        <div class="text-xs text-zinc-700 font-body leading-relaxed text-right">
+          FSL-1.1-Apache-2.0<br>
+          Converts to Apache 2.0 after 2 years.
+        </div>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Progress bar
+    const progressBar = document.getElementById('progress-bar');
+    function updateProgress() {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const progress = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
+      progressBar.style.width = progress + '%';
+    }
+    window.addEventListener('scroll', updateProgress, { passive: true });
+
+    // Scroll-triggered fade-up & stagger
+    const fadeObserver = new IntersectionObserver((entries) => {
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+        }
+      });
+    }, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+    document.querySelectorAll('.fade-up, .stagger').forEach(el => fadeObserver.observe(el));
+
+    // Hero fade on load
+    window.addEventListener('load', () => {
+      document.querySelectorAll('header .fade-up').forEach((el, i) => {
+        setTimeout(() => el.classList.add('visible'), i * 150);
+      });
+    });
+  </script>
+</body>
+</html>
