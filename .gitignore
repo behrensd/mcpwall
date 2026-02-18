@@ -23,3 +23,7 @@ site/.vercel/
 # Build artifacts
 *.tsbuildinfo
 coverage/
+.vercel
+
+# Demo video binaries (GIF kept for README, MP4 for social only)
+demo/*.mp4

@@ -10,6 +10,10 @@
 
 Sits between your AI coding tool (Claude Code, Cursor, Windsurf) and MCP servers, intercepting every JSON-RPC message and enforcing YAML-defined policies.
 
+<p align="center">
+  <img src="demo/demo.gif" alt="mcpwall demo — blocking SSH key theft, pipe-to-shell, and secret leakage" width="700">
+</p>
+
 ## Why
 
 MCP servers have full access to your filesystem, shell, databases, and APIs. When an AI agent calls `tools/call`, the server executes whatever the agent asks — reading SSH keys, running `rm -rf`, exfiltrating secrets. There's no built-in policy layer.
