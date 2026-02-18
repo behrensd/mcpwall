@@ -360,29 +360,29 @@
         MCP servers can read your SSH keys, delete<br class="hidden md:block"> your files, and exfiltrate your secrets.
       </h2>
       <p class="text-zinc-400 font-body text-lg max-w-2xl mx-auto">
-        And there's no built-in way to stop them.
+        And there's no open, programmable way to stop them.
       </p>
     </div>
 
     <div class="grid md:grid-cols-3 gap-5 stagger">
       <div class="threat-card">
-        <div class="text-red-400 font-mono text-sm font-500 mb-3 tracking-wide">NO POLICY LAYER</div>
+        <div class="text-red-400 font-mono text-sm font-500 mb-3 tracking-wide">NO PROGRAMMABLE POLICY</div>
         <p class="text-zinc-300 font-body leading-relaxed text-[15px]">
-          MCP servers execute whatever the AI asks. <span class="text-zinc-100 font-500">read_file ~/.ssh/id_rsa</span>? Done. <span class="text-zinc-100 font-500">rm -rf /</span>? Done. There's no built-in way to say "allow reads, block writes outside my project."
+          MCP servers execute whatever the AI asks. <span class="text-zinc-100 font-500">read_file ~/.ssh/id_rsa</span>? Done. <span class="text-zinc-100 font-500">rm -rf /</span>? Done. IDE guardrails are ad-hoc and closed. There's no way to say "allow reads, block writes outside my project."
         </p>
       </div>
 
       <div class="threat-card">
-        <div class="text-red-400 font-mono text-sm font-500 mb-3 tracking-wide">SCANNERS MISS 97%</div>
+        <div class="text-red-400 font-mono text-sm font-500 mb-3 tracking-wide">SCANNERS AREN'T ENOUGH</div>
         <p class="text-zinc-300 font-body leading-relaxed text-[15px]">
-          mcp-scan detected <span class="text-zinc-100 font-500">only 4 of 120 poisoned servers</span> in independent testing. Static scanning gives a false sense of security. You need runtime enforcement.
+          In one academic study, mcp-scan detected <span class="text-zinc-100 font-500">only 4 of 120 poisoned servers</span> (<a href="https://arxiv.org/abs/2509.24272" target="_blank" class="text-zinc-300 underline decoration-zinc-600 hover:decoration-zinc-400">arXiv:2509.24272</a>). Scanners check at install time. You need runtime enforcement too.
         </p>
       </div>
 
       <div class="threat-card">
-        <div class="text-red-400 font-mono text-sm font-500 mb-3 tracking-wide">CLOUD = MORE RISK</div>
+        <div class="text-red-400 font-mono text-sm font-500 mb-3 tracking-wide">CLOUD ADDS RISK</div>
         <p class="text-zinc-300 font-body leading-relaxed text-[15px]">
-          Competitors route your tool calls through cloud APIs for "AI-powered" screening. Your code, secrets, and data <span class="text-zinc-100 font-500">leave your machine</span>. That's the problem, not the solution.
+          Some security tools route tool calls through cloud APIs for screening. Your code, secrets, and data <span class="text-zinc-100 font-500">leave your machine</span>. For privacy-sensitive work, local-only enforcement is the safer default.
         </p>
       </div>
     </div>

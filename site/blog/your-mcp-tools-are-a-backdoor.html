@@ -553,7 +553,7 @@
             </p>
             <div class="stderr-callout stderr-danger rounded-lg mt-8 max-w-xl">
               <span class="stderr-tag">stderr</span>
-              There is no policy layer between &ldquo;the AI decided to do this&rdquo; and &ldquo;the server did it.&rdquo;
+              There is no open, programmable policy layer between &ldquo;the AI decided to do this&rdquo; and &ldquo;the server did it.&rdquo;
             </div>
           </div>
           <aside class="marginalia mt-8 xl:mt-16 hide-mobile">
@@ -690,7 +690,7 @@
           <div class="threat-card">
             <div class="text-danger-400/70 font-mono text-xs tracking-wider mb-4">MCP-SCAN (SNYK)</div>
             <p class="text-zinc-300 font-body leading-relaxed text-[15px]">
-              Checks tool descriptions at <span class="text-zinc-100 font-500">install time</span>. Detected <span class="text-danger-400 font-500">4 of 120</span> poisoned servers in independent testing. A 3.3% detection rate. Static scanning gives a false sense of security.
+              Checks tool descriptions at <span class="text-zinc-100 font-500">install time</span>. In one academic study, detected <span class="text-danger-400 font-500">4 of 120</span> poisoned servers &mdash; a 3.3% detection rate. Scanners are a useful first layer, but runtime enforcement is needed too.
             </p>
             <div class="font-mono text-[10px] text-zinc-600 mt-4">Source: arXiv:2509.24272</div>
           </div>
@@ -698,7 +698,7 @@
           <div class="threat-card">
             <div class="text-danger-400/70 font-mono text-xs tracking-wider mb-4">CLOUD-BASED SOLUTIONS</div>
             <p class="text-zinc-300 font-body leading-relaxed text-[15px]">
-              Route your tool calls through <span class="text-zinc-100 font-500">external APIs</span>. Your code and secrets leave your machine. That&rsquo;s adding a data exfiltration vector to solve data exfiltration.
+              Some tools route your tool calls through <span class="text-zinc-100 font-500">external APIs</span>. Your code and secrets leave your machine. For privacy-sensitive work, local-only enforcement is the safer default.
             </p>
           </div>
         </div>
@@ -985,7 +985,7 @@
           <div class="p-6 rounded-xl" style="background: rgba(239,68,68,0.04); border: 1px solid rgba(239,68,68,0.1);">
             <div class="font-mono text-[11px] text-danger-400/60 tracking-wider mb-2">CVE-2025-6514</div>
             <div class="font-display font-700 text-2xl text-zinc-100 tracking-tight">CVSS 9.6</div>
-            <p class="font-body text-zinc-500 text-sm mt-2">437K+ MCP installs affected at disclosure.</p>
+            <p class="font-body text-zinc-500 text-sm mt-2">Critical RCE in mcp-remote. 437K+ installs affected.</p>
           </div>
 
           <div class="p-6 rounded-xl" style="background: rgba(6,182,212,0.04); border: 1px solid rgba(6,182,212,0.1);">
@@ -996,7 +996,7 @@
 
           <div class="sm:col-span-2 p-6 rounded-xl" style="background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05);">
             <p class="font-body text-zinc-300 leading-relaxed text-[15px]">
-              MCP adoption is accelerating&thinsp;&mdash;&thinsp;it&rsquo;s been donated to the Linux Foundation, every major AI coding tool supports it, and the server ecosystem is growing by hundreds per week. The attack surface is growing faster than the security tooling. If you use MCP servers, you need a policy layer between your AI agent and those servers.
+              MCP adoption is accelerating&thinsp;&mdash;&thinsp;it&rsquo;s been donated to the Linux Foundation, every major AI coding tool supports it, and the server ecosystem is growing by hundreds per week. The attack surface is growing faster than the security tooling. If you use MCP servers, a programmable policy layer between your AI agent and those servers is defense in depth.
             </p>
           </div>
         </div>
