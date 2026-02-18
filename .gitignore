@@ -13,6 +13,11 @@ specs/
 # Vercel config
 site/.vercel/
 
+# Next.js site build
+site/.next/
+site/out/
+site/node_modules/
+
 # MCP Registry auth tokens
 .mcpregistry_*
 
