@@ -6,6 +6,8 @@
 [![Node.js](https://img.shields.io/node/v/mcpwall)](https://nodejs.org)
 [![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue)](./LICENSE)
 
+<a href="https://glama.ai/mcp/servers/@behrensd/mcpwall"><img width="380" height="200" src="https://glama.ai/mcp/servers/@behrensd/mcpwall/badge" alt="mcpwall MCP server" /></a>
+
 **iptables for MCP.** Blocks dangerous tool calls, scans for secret leakage, logs everything. No AI, no cloud, pure rules.
 
 Sits between your AI coding tool (Claude Code, Cursor, Windsurf) and MCP servers, intercepting every JSON-RPC message and enforcing YAML-defined policies.

@@ -98,7 +98,7 @@ const threats: {
     summary:
       "Agent permissions expanding over time is outside mcpwall\u2019s scope.",
     detail:
-      "Scope creep is an authorization and identity management problem. mcpwall doesn\u2019t manage tokens, session scopes, or agent identity. Mitigating this requires time-limited scopes, automated entitlement audits, and unique agent identities \u2014 all of which sit at the platform or orchestrator level.",
+      "Scope creep is an authorization and identity management problem. mcpwall doesn\u2019t manage tokens, session scopes, or agent identity. Mitigating this requires time-limited scopes, automated entitlement audits, and unique agent identities, all of which sit at the platform or orchestrator level.",
   },
   {
     id: "MCP03",
@@ -107,18 +107,18 @@ const threats: {
     summary:
       "mcpwall can\u2019t detect poisoned tool metadata, but it blocks the dangerous tool calls that result from poisoning.",
     detail:
-      "CyberArk\u2019s research showed that poisoning goes far beyond tool descriptions \u2014 the entire JSON schema (type fields, required arrays, default values) and even tool return values can carry hidden instructions. mcpwall doesn\u2019t inspect tools/list metadata today. But when a poisoned tool tricks the LLM into reading SSH keys or exfiltrating secrets, the resulting tool call still hits mcpwall\u2019s rules.",
+      "CyberArk\u2019s research showed that poisoning goes far beyond tool descriptions. The entire JSON schema (type fields, required arrays, default values) and even tool return values can carry hidden instructions. mcpwall doesn\u2019t inspect tools/list metadata today. But when a poisoned tool tricks the LLM into reading SSH keys or exfiltrating secrets, the resulting tool call still hits mcpwall\u2019s rules.",
     rules: ["block-ssh-keys", "block-secret-leakage", "block-env-files"],
-    planned: "v0.3.0 \u2014 tool integrity / rug pull detection",
+    planned: "v0.3.0: tool integrity / rug pull detection",
   },
   {
     id: "MCP04",
-    name: "Supply Chain Attacks & Dependency Tampering",
+    name: "Software Supply Chain Attacks & Dependency Tampering",
     coverage: "not-covered",
     summary:
       "Package-level compromise is outside mcpwall\u2019s scope.",
     detail:
-      "If a compromised npm package replaces a legitimate MCP server, mcpwall has no way to detect it \u2014 it sees the same stdio interface regardless of who published the binary. Mitigating supply chain attacks requires lockfiles, package signatures, and SBOMs. mcpwall operates one layer above: it catches what the compromised server tries to do, not the compromise itself.",
+      "If a compromised npm package replaces a legitimate MCP server, mcpwall has no way to detect it. It sees the same stdio interface regardless of who published the binary. Mitigating supply chain attacks requires lockfiles, package signatures, and SBOMs. mcpwall operates one layer above: it catches what the compromised server tries to do, not the compromise itself.",
   },
   {
     id: "MCP05",
@@ -178,7 +178,7 @@ const threats: {
     summary:
       "Cross-session and cross-agent context leakage is an LLM-layer concern.",
     detail:
-      "When shared context windows leak data between agents or sessions, the problem is at the orchestrator and LLM level. mcpwall sees individual tool calls, not the context that produced them. Preventing over-sharing requires context isolation, tenant boundaries, and vector store access controls \u2014 none of which are visible at the stdio proxy layer.",
+      "When shared context windows leak data between agents or sessions, the problem is at the orchestrator and LLM level. mcpwall sees individual tool calls, not the context that produced them. Preventing over-sharing requires context isolation, tenant boundaries, and vector store access controls. None of which are visible at the stdio proxy layer.",
   },
 ];
 
@@ -253,7 +253,7 @@ export default function OwaspBlogPage() {
               >
                 MCP Top 10
               </a>{" "}
-              &mdash; the first formal threat taxonomy for the Model Context
+              . A community-driven threat taxonomy for the Model Context
               Protocol. Here&rsquo;s an honest, line-by-line look at what
               mcpwall covers, what it partially mitigates, and what&rsquo;s
               entirely out of scope.
@@ -326,7 +326,7 @@ export default function OwaspBlogPage() {
               <p className="font-body text-lg md:text-xl text-zinc-300 leading-relaxed max-w-2xl mt-6">
                 Now there is. The OWASP MCP Top 10 gives us a canonical list of
                 threats. This post maps each one against mcpwall&rsquo;s current
-                default rules &mdash; and is explicit about where coverage
+                default rules, and is explicit about where coverage
                 stops.
               </p>
             </FadeUp>
@@ -500,7 +500,7 @@ export default function OwaspBlogPage() {
                     required
                   </code>{" "}
                   arrays, and default values. The LLM processes the entire
-                  schema as part of its reasoning &mdash; every field is a
+                  schema as part of its reasoning. Every field is a
                   potential injection point.
                 </p>
               </div>
@@ -522,8 +522,8 @@ export default function OwaspBlogPage() {
                     ~/.ssh/id_rsa&rdquo;
                   </code>
                   . The LLM interprets this as a legitimate requirement.
-                  Achieves significantly higher success rates than schema
-                  poisoning because the LLM trusts tool return values.
+                  Particularly effective because the LLM treats return values
+                  as trusted system output, not user input.
                 </p>
               </div>
 
@@ -540,7 +540,7 @@ export default function OwaspBlogPage() {
                 <p className="font-body text-sm text-zinc-400 leading-relaxed">
                   When multiple MCP servers connect to the same agent, a
                   malicious server can include hidden instructions that override
-                  how trusted servers handle operations &mdash; routing all
+                  how trusted servers handle operations, routing all
                   GitHub API calls through the attacker&rsquo;s proxy instead of
                   the legitimate server.
                 </p>
@@ -612,7 +612,7 @@ export default function OwaspBlogPage() {
 
             <FadeUp className="mt-10 max-w-xl">
               <StderrCallout variant="info" tag="design">
-                This is by design. mcpwall is defense in depth &mdash; one
+                This is by design. mcpwall is defense in depth. One
                 layer, not the whole stack. It works alongside sandboxing,
                 scanners, platform-level auth, and organizational policies.
               </StderrCallout>
