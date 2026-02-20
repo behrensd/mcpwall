@@ -4,7 +4,7 @@
 [![npm version](https://img.shields.io/npm/v/mcpwall)](https://www.npmjs.com/package/mcpwall)
 [![CI](https://github.com/behrensd/mcp-firewall/actions/workflows/ci.yml/badge.svg)](https://github.com/behrensd/mcp-firewall/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/node/v/mcpwall)](https://nodejs.org)
-[![License: FSL-1.1-ALv2](https://img.shields.io/badge/license-FSL--1.1--ALv2-blue)](./LICENSE)
+[![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 
 <a href="https://glama.ai/mcp/servers/@behrensd/mcpwall"><img width="380" height="200" src="https://glama.ai/mcp/servers/@behrensd/mcpwall/badge" alt="mcpwall MCP server" /></a>
 
@@ -333,7 +333,7 @@ mcpwall also prints color-coded output to stderr so you can see decisions in rea
 
 ## License
 
-[FSL-1.1-ALv2](./LICENSE) — source-available, converts to Apache 2.0 after 2 years.
+[Apache-2.0](./LICENSE)
 
 ---
 

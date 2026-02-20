@@ -39,9 +39,7 @@ export default function Footer({ variant = "landing" }: FooterProps) {
               </div>
             </div>
             <div className="text-xs text-zinc-700 font-body leading-relaxed text-right">
-              FSL-1.1-Apache-2.0
-              <br />
-              Converts to Apache 2.0 after 2 years.
+              Apache-2.0
             </div>
           </div>
         </div>
@@ -70,7 +68,7 @@ export default function Footer({ variant = "landing" }: FooterProps) {
           </a>
         </div>
         <div className="text-xs text-zinc-600 font-body text-center md:text-right leading-relaxed">
-          FSL-1.1-Apache-2.0 &mdash; converts to Apache 2.0 after 2 years.
+          Apache-2.0
           <br />
           mcpwall is not affiliated with or endorsed by Anthropic. MCP is
           maintained by the Agentic AI Foundation under the Linux Foundation.

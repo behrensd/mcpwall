@@ -29,7 +29,7 @@
     "audit"
   ],
   "author": "Dom Behrens",
-  "license": "FSL-1.1-Apache-2.0",
+  "license": "Apache-2.0",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/behrensd/mcp-firewall.git"

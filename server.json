@@ -8,13 +8,13 @@
     "url": "https://github.com/behrensd/mcp-firewall",
     "source": "github"
   },
-  "version": "0.1.2",
+  "version": "0.2.0",
   "packages": [
     {
       "registryType": "npm",
       "registryBaseUrl": "https://registry.npmjs.org",
       "identifier": "mcpwall",
-      "version": "0.1.2",
+      "version": "0.2.0",
       "transport": {
         "type": "stdio"
       }
