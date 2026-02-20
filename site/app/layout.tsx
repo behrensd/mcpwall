@@ -24,12 +24,17 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://mcpwall.dev"),
   title: {
     default: "mcpwall — Firewall for MCP Tool Calls",
     template: "%s — mcpwall",
   },
   description:
     "Deterministic security proxy for MCP tool calls. Blocks dangerous requests, scans for secrets, logs everything. Works with Claude Code, Cursor, and any MCP client.",
+  robots: {
+    index: true,
+    follow: true,
+  },
   openGraph: {
     siteName: "mcpwall",
     type: "website",

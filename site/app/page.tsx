@@ -70,9 +70,9 @@ export default function HomePage() {
 
           <FadeUp delay="200ms">
             <p className="font-body text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 leading-relaxed">
-              mcpwall is a transparent stdio proxy that intercepts every MCP tool
-              call and enforces YAML-defined policies. Block dangerous requests,
-              scan for secrets, log everything. No AI, no cloud, pure rules.
+              mcpwall is a transparent stdio proxy that scans both directions.
+              Block dangerous requests, redact secrets from responses, catch
+              prompt injection. No AI, no cloud, pure rules.
             </p>
           </FadeUp>
 
@@ -85,7 +85,7 @@ export default function HomePage() {
               <div style={{ background: "#09090b" }}>
                 <img
                   src="/demo.gif"
-                  alt="mcpwall blocking SSH key theft, pipe-to-shell, and secret leakage in real time"
+                  alt="mcpwall v0.2.0: inbound blocking (SSH keys), outbound secret redaction, and prompt injection denial"
                   style={{
                     width: "100%",
                     display: "block",
@@ -292,8 +292,8 @@ export default function HomePage() {
               Enforce
             </div>
             <p className="text-zinc-400 text-sm font-body">
-              Allow &rarr; forward to server. Deny &rarr; return JSON-RPC error,
-              log, don&rsquo;t forward.
+              Requests: allow or deny. Responses: allow, deny, or redact
+              secrets. Both directions logged.
             </p>
           </div>
         </Stagger>
@@ -484,6 +484,32 @@ export default function HomePage() {
                 {"}"}
               </div>
             </CodeBlock>
+          </FeatureCard>
+
+          <FeatureCard>
+            <div className="text-brand-400 font-mono text-sm font-normal mb-3 tracking-wide">
+              RESPONSE INSPECTION
+            </div>
+            <p className="text-zinc-300 font-body leading-relaxed text-[15px] mb-4">
+              v0.2.0 scans both directions. Server responses are inspected
+              before reaching your AI client. Leaked secrets are surgically
+              redacted. Prompt injection patterns are blocked.
+            </p>
+            <div className="mt-2 space-y-2">
+              {[
+                "Secret redaction (API keys, tokens, JWTs)",
+                "Prompt injection blocking",
+                "Zero-width character detection",
+                "Response size monitoring",
+              ].map((item) => (
+                <div
+                  key={item}
+                  className="flex items-center gap-3 text-sm text-zinc-400 font-body"
+                >
+                  <span className="text-brand-400">&#10003;</span> {item}
+                </div>
+              ))}
+            </div>
           </FeatureCard>
 
           <FeatureCard>

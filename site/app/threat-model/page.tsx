@@ -76,7 +76,7 @@ export default function ThreatModelPage() {
                     SECURITY REFERENCE
                   </span>
                   <span className="font-mono text-[11px] text-zinc-600 tracking-wide">
-                    v0.1.2 &mdash; 2026-02-18
+                    v0.2.0 &mdash; 2026-02-20
                   </span>
                 </div>
 

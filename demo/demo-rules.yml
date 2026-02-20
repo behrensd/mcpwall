@@ -1,0 +1,49 @@
+version: 1
+
+settings:
+  log_dir: ~/.mcpwall/logs
+  log_level: info
+  default_action: allow
+
+rules:
+  - name: block-ssh-keys
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(\\.ssh/|id_rsa|id_ed25519|id_ecdsa)"
+    action: deny
+    message: "Blocked: access to SSH keys"
+
+  - name: block-secret-leakage
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          secrets: true
+    action: deny
+    message: "Blocked: detected secret/API key in tool arguments"
+
+outbound_rules:
+  - name: redact-secrets-in-responses
+    match:
+      secrets: true
+    action: redact
+    message: "Secret detected in server response and redacted"
+
+  - name: block-prompt-injection-patterns
+    match:
+      response_contains:
+        - "ignore all previous instructions"
+        - "ignore previous instructions"
+    action: deny
+    message: "Prompt injection pattern detected in response"
+
+secrets:
+  patterns:
+    - name: aws-access-key
+      regex: "AKIA[0-9A-Z]{16}"
+    - name: database-url
+      regex: "(postgres|mysql|mongodb|redis)://[^\\s]+"
