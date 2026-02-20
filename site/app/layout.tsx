@@ -30,7 +30,7 @@ export const metadata: Metadata = {
     template: "%s — mcpwall",
   },
   description:
-    "Deterministic security proxy for MCP tool calls. Blocks dangerous requests, scans for secrets, logs everything. Works with Claude Code, Cursor, and any MCP client.",
+    "Deterministic security proxy for MCP tool calls. Scans both directions: blocks dangerous requests, redacts secrets from responses, catches prompt injection. Works with Claude Code, Cursor, and any MCP client.",
   robots: {
     index: true,
     follow: true,

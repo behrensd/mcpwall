@@ -15,6 +15,23 @@ export const metadata: Metadata = {
     type: "website",
     url: "https://mcpwall.dev/blog",
     siteName: "mcpwall",
+    images: [
+      {
+        url: "https://mcpwall.dev/og/blog-01-backdoor.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Blog — mcpwall",
+    description:
+      "Security research and technical writing on MCP tool call security.",
+    images: ["https://mcpwall.dev/og/blog-01-backdoor.png"],
+  },
+  alternates: {
+    canonical: "https://mcpwall.dev/blog",
   },
 };
 

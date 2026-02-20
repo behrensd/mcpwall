@@ -15,11 +15,11 @@ import FeatureCard from "@/components/FeatureCard";
 export const metadata: Metadata = {
   title: "mcpwall — Firewall for MCP Tool Calls",
   description:
-    "Deterministic security proxy for MCP tool calls. Blocks dangerous requests, scans for secrets, logs everything. Works with Claude Code, Cursor, and any MCP client. No cloud, no AI, pure rules.",
+    "Deterministic security proxy for MCP tool calls. Scans both directions: blocks dangerous requests, redacts secrets from responses, catches prompt injection. Works with Claude Code, Cursor, and any MCP client.",
   openGraph: {
     title: "mcpwall — Firewall for MCP Tool Calls",
     description:
-      "iptables for MCP. Blocks dangerous tool calls, scans for secret leakage, logs everything. No AI, no cloud, pure rules.",
+      "iptables for MCP. Scans both directions: blocks dangerous requests, redacts leaked secrets, catches prompt injection. No AI, no cloud, pure rules.",
     type: "website",
     url: "https://mcpwall.dev",
     siteName: "mcpwall",
@@ -35,8 +35,11 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "mcpwall — Firewall for MCP Tool Calls",
     description:
-      "iptables for MCP. Blocks dangerous tool calls, scans for secret leakage, logs everything. No AI, no cloud, pure rules.",
+      "iptables for MCP. Scans both directions: blocks dangerous requests, redacts leaked secrets, catches prompt injection. No AI, no cloud, pure rules.",
     images: ["https://mcpwall.dev/og/blog-01-backdoor.png"],
+  },
+  alternates: {
+    canonical: "https://mcpwall.dev",
   },
 };
 
