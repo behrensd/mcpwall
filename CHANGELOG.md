@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.2.0 (2026-02-20)
+
+### Response Inspection (Outbound Scanning)
+
+- **Bidirectional scanning**: mcpwall now evaluates server responses before forwarding to the client, not just inbound requests
+- **Secret redaction**: Responses containing API keys, tokens, or private keys are surgically redacted (`[REDACTED BY MCPWALL]`) while preserving JSON-RPC structure
+- **Prompt injection detection**: Known injection phrases (e.g., "ignore previous instructions") in responses trigger a deny action, replacing the response with a blocked message
+- **Zero-width character detection**: Flags invisible Unicode characters (U+200B, U+200C, etc.) used in CyberArk's ATPA attack technique
+- **Response size monitoring**: Flag or block suspiciously large responses that may indicate data dumps
+- **Request-response correlation**: Outbound rules can target specific tools (e.g., only scan `github_search` responses) via in-memory correlation with 60s TTL
+
+### New Outbound Rule Actions
+
+- `redact`: Surgically replace matched secrets, forward modified response
+- `deny`: Replace entire response with blocked message
+- `log_only`: Forward unchanged, log the match
+- `allow`: Forward unchanged (explicit pass)
+
+### IDE Support
+
+- `mcpwall init` and `mcpwall wrap` now search Cursor, Windsurf, and VS Code configs in addition to Claude Code
+
+### Rule Packs
+
+- `rules/default.yml`: Added outbound rules for secret redaction and large response flagging
+- `rules/strict.yml`: Added outbound rules for prompt injection blocking, shell pattern detection, zero-width char detection, and tighter size limits
+
 ## 0.1.2 (2026-02-17)
 
 ### Registry & Discovery

@@ -11,6 +11,11 @@ import type { McpServerConfig, McpConfigFile } from '../types.js';
 const CONFIG_PATHS = [
   () => join(homedir(), '.claude.json'),
   () => join(process.cwd(), '.mcp.json'),
+  () => join(homedir(), '.cursor', 'mcp.json'),
+  () => join(process.cwd(), '.cursor', 'mcp.json'),
+  () => join(homedir(), '.config', 'windsurf', 'mcp.json'),
+  () => join(homedir(), '.vscode', 'mcp.json'),
+  () => join(process.cwd(), '.vscode', 'mcp.json'),
 ];
 
 export async function runWrap(serverName: string): Promise<void> {

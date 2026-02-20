@@ -25,7 +25,8 @@ mcpwall adds one. It's a transparent stdio proxy that:
 - **Blocks sensitive file access** — `.ssh/`, `.env`, credentials, browser data
 - **Blocks dangerous commands** — `rm -rf`, pipe-to-shell, reverse shells
 - **Scans for secret leakage** — API keys, tokens, private keys (regex + entropy)
-- **Logs everything** — JSON Lines audit trail of every tool call
+- **Scans server responses** — redacts leaked secrets, blocks prompt injection patterns, flags suspicious content
+- **Logs everything** — JSON Lines audit trail of every tool call and response
 - **Uses zero AI** — deterministic rules, no LLM decisions, no cloud calls
 
 ## Install
@@ -78,7 +79,7 @@ That's it. mcpwall now sits in front of all your Docker MCP servers, logging eve
 npx mcpwall init
 ```
 
-This finds your existing MCP servers in `~/.claude.json` or `.mcp.json` and wraps them.
+This finds your existing MCP servers in Claude Code, Cursor, Windsurf, and VS Code configs and wraps them.
 
 ### Option 3: Manual wrapping (any MCP server)
 
@@ -124,14 +125,27 @@ npx mcpwall wrap filesystem
 │  Claude Code │ ──────────▶  │   mcpwall    │ ──────────▶  │  Real MCP    │
 │  (MCP Host)  │ ◀──────────  │   (proxy)    │ ◀──────────  │   Server     │
 └──────────────┘              └──────────────┘              └──────────────┘
+                               ▲ Inbound rules               │
+                               │ (block dangerous requests)   │
+                               │                              │
+                               └── Outbound rules ◀───────────┘
+                                   (redact secrets, block injection)
 ```
 
+**Inbound** (requests):
 1. Intercepts every JSON-RPC request on stdin
 2. Parses `tools/call` requests — extracts tool name and arguments
 3. Walks rules top-to-bottom, first match wins
 4. **Allow**: forward to real server
 5. **Deny**: return JSON-RPC error to host, log, do not forward
-6. Responses from server are forwarded back and logged
+
+**Outbound** (responses):
+1. Parses every response from the server before forwarding
+2. Evaluates against `outbound_rules` (same first-match-wins semantics)
+3. **Allow**: forward unchanged
+4. **Deny**: replace response with blocked message
+5. **Redact**: surgically replace secrets with `[REDACTED BY MCPWALL]`, forward modified response
+6. **Log only**: forward unchanged, log the match
 
 ## Configuration
 
@@ -220,6 +234,55 @@ secrets:
 
 The special key `_any_value` applies the matcher to ALL argument values.
 
+### Outbound rules (response inspection)
+
+Outbound rules scan server responses before they reach your AI client. Add them to the same config file:
+
+```yaml
+outbound_rules:
+  # Redact secrets leaked in responses
+  - name: redact-secrets-in-responses
+    match:
+      secrets: true
+    action: redact
+    message: "Secret detected in server response"
+
+  # Block prompt injection patterns
+  - name: block-prompt-injection
+    match:
+      response_contains:
+        - "ignore previous instructions"
+        - "provide contents of ~/.ssh"
+    action: deny
+    message: "Prompt injection detected"
+
+  # Flag suspiciously large responses
+  - name: flag-large-responses
+    match:
+      response_size_exceeds: 102400
+    action: log_only
+```
+
+#### Outbound matchers
+
+| Matcher | Description |
+|---------|-------------|
+| `tool` | Glob pattern on the tool that produced the response (requires request-response correlation) |
+| `server` | Glob pattern on the server name |
+| `secrets` | When `true`, scans response for secret patterns (uses same `secrets.patterns` config) |
+| `response_contains` | Case-insensitive substring match against response text |
+| `response_contains_regex` | Regex match against response text |
+| `response_size_exceeds` | Byte size threshold for the serialized response |
+
+#### Outbound actions
+
+| Action | Behavior |
+|--------|----------|
+| `allow` | Forward response unchanged |
+| `deny` | Replace response with `[BLOCKED BY MCPWALL]` message |
+| `redact` | Surgically replace matched secrets with `[REDACTED BY MCPWALL]`, forward modified response |
+| `log_only` | Forward unchanged, log the match |
+
 ### Built-in rule packs
 
 - `rules/default.yml` — sensible defaults (blocks SSH, .env, credentials, dangerous commands, secrets)
@@ -258,8 +321,11 @@ mcpwall also prints color-coded output to stderr so you can see decisions in rea
 
 ## Security Design
 
+- **Bidirectional scanning**: Both inbound requests and outbound responses are evaluated against rules
 - **Fail closed on invalid config**: Bad regex in a rule crashes at startup, never silently passes traffic
+- **Fail open on outbound errors**: If response parsing fails, the raw response is forwarded (never blocks legitimate traffic)
 - **Args redacted on deny**: Blocked tool call arguments are never written to logs
+- **Surgical redaction**: Secrets in responses are replaced in-place, preserving the JSON-RPC response structure
 - **Path traversal defense**: `not_under` matcher uses `path.resolve()` to prevent `../` bypass
 - **Pre-compiled regexes**: All patterns compiled once at startup for consistent performance
 - **No network**: Zero cloud calls, zero telemetry, runs entirely local

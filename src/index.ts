@@ -7,6 +7,7 @@ import { program } from 'commander';
 import { createRequire } from 'node:module';
 import { loadConfig } from './config/loader.js';
 import { PolicyEngine } from './engine/policy.js';
+import { OutboundPolicyEngine } from './engine/outbound-policy.js';
 import { Logger } from './logger.js';
 import { createProxy } from './proxy.js';
 import { runInit } from './cli/init.js';
@@ -50,6 +51,9 @@ if (dashDashIndex !== -1) {
       }
 
       const policyEngine = new PolicyEngine(config);
+      const outboundPolicyEngine = config.outbound_rules?.length
+        ? new OutboundPolicyEngine(config)
+        : undefined;
       const logger = new Logger({
         logDir: config.settings.log_dir,
         logLevel: config.settings.log_level
@@ -60,7 +64,9 @@ if (dashDashIndex !== -1) {
         args,
         policyEngine,
         logger,
-        logArgs: config.settings.log_args
+        logArgs: config.settings.log_args,
+        outboundPolicyEngine,
+        logRedacted: config.settings.log_redacted,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

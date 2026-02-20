@@ -44,8 +44,11 @@ export interface Config {
     log_level: 'debug' | 'info' | 'warn' | 'error';
     default_action: 'allow' | 'deny' | 'ask';
     log_args?: 'full' | 'none';
+    outbound_default_action?: OutboundAction;
+    log_redacted?: 'none' | 'hash' | 'full';
   };
   rules: Rule[];
+  outbound_rules?: OutboundRule[];
   secrets?: {
     patterns: SecretPattern[];
   };
@@ -63,9 +66,11 @@ export interface LogEntry {
   method?: string;
   tool: string | undefined;
   args?: unknown;
-  action: 'allow' | 'deny' | 'ask';
+  action: string;
   rule: string | null;
   message?: string;
+  direction?: 'inbound' | 'outbound';
+  redacted_patterns?: string[];
 }
 
 export interface LineBuffer {
@@ -82,4 +87,37 @@ export interface McpServerConfig {
 export interface McpConfigFile {
   mcpServers?: Record<string, McpServerConfig>;
   [key: string]: unknown;
+}
+
+// === Outbound (Response Inspection) Types ===
+
+export type OutboundAction = 'allow' | 'deny' | 'redact' | 'log_only';
+
+export interface OutboundMatch {
+  tool?: string;
+  server?: string;
+  secrets?: boolean;
+  response_contains?: string[];
+  response_contains_regex?: string[];
+  response_size_exceeds?: number;
+}
+
+export interface OutboundRule {
+  name: string;
+  match: OutboundMatch;
+  action: OutboundAction;
+  message?: string;
+}
+
+export interface OutboundDecision {
+  action: OutboundAction;
+  rule: string | null;
+  message?: string;
+  matches?: Array<{ pattern: string; count: number }>;
+}
+
+export interface RequestContext {
+  tool?: string;
+  method?: string;
+  ts: number;
 }

@@ -10,7 +10,7 @@ import StickyToc from "./StickyToc";
 export const metadata: Metadata = {
   title: "Threat Model",
   description:
-    "What mcpwall protects against, what it doesn\u2019t, and the assumptions it makes. A transparent security analysis of mcpwall v0.1.2.",
+    "What mcpwall protects against, what it doesn\u2019t, and the assumptions it makes. A transparent security analysis of mcpwall v0.2.0.",
   openGraph: {
     title: "mcpwall Threat Model",
     description:
@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     siteName: "mcpwall",
     images: [
       {
-        url: "https://mcpwall.dev/og/blog-01-backdoor.png",
+        url: "https://mcpwall.dev/og/blog-02-threat-model.png",
         width: 1200,
         height: 630,
       },
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     title: "mcpwall Threat Model",
     description:
       "What mcpwall protects against, what it doesn\u2019t, and the assumptions it makes.",
-    images: ["https://mcpwall.dev/og/blog-01-backdoor.png"],
+    images: ["https://mcpwall.dev/og/blog-02-threat-model.png"],
   },
   alternates: {
     canonical: "https://mcpwall.dev/threat-model",
@@ -165,18 +165,18 @@ export default function ThreatModelPage() {
                     </span>
                   </div>
                   <div className="mt-4 text-zinc-600 text-[11px]">
-                    Inbound: every message inspected &amp; filtered &nbsp;|&nbsp;
-                    Outbound: logged, forwarded unfiltered (v0.1.x)
+                    Inbound: every request inspected &amp; filtered &nbsp;|&nbsp;
+                    Outbound: responses inspected, secrets redacted, injection blocked (v0.2.0)
                   </div>
                 </div>
 
                 <div className="prose-body max-w-2xl">
                   <p>
-                    <strong>Key distinction:</strong> mcpwall inspects{" "}
-                    <strong>requests</strong> (client &rarr; server). In v0.1.x,
-                    responses (server &rarr; client) are logged but{" "}
-                    <strong>not filtered</strong>. Response inspection is planned
-                    for v0.2.0.
+                    <strong>Bidirectional scanning:</strong> mcpwall inspects
+                    both <strong>requests</strong> (client &rarr; server) and{" "}
+                    <strong>responses</strong> (server &rarr; client). Outbound
+                    rules can redact leaked secrets, block prompt injection
+                    patterns, and flag suspicious content.
                   </p>
                 </div>
               </section>
@@ -210,8 +210,8 @@ export default function ThreatModelPage() {
                       </tr>
                       <tr>
                         <td className="name-col">Server &rarr; Client (stdout)</td>
-                        <td><StatusBadge status="partial">Logged only</StatusBadge></td>
-                        <td>Messages logged for audit; forwarded unfiltered in v0.1.x</td>
+                        <td><StatusBadge status="covered">Inspected</StatusBadge></td>
+                        <td>Responses evaluated against outbound rules. Secrets redacted, injection blocked. (v0.2.0)</td>
                       </tr>
                       <tr>
                         <td className="name-col">Server stderr</td>
@@ -325,7 +325,7 @@ export default function ThreatModelPage() {
                     </thead>
                     <tbody>
                       {[
-                        { name: "Response-side attacks", sev: "HIGH", sevClass: "sev-high", status: "not-covered" as const, statusLabel: "Not covered", detail: "Server responses forwarded unfiltered. A compromised server can return secrets or malicious content. Planned for v0.2.0." },
+                        { name: "Response-side attacks", sev: "HIGH", sevClass: "sev-high", status: "covered" as const, statusLabel: "Covered", detail: "Server responses scanned for secrets (redacted) and prompt injection patterns (blocked). Zero-width characters and large responses flagged. Added in v0.2.0." },
                         { name: "Base64/URL encoding bypass", sev: "HIGH", sevClass: "sev-high", status: "not-covered" as const, statusLabel: "Not covered", detail: "Secret patterns and command regexes only match literal strings. Base64-encoded secrets or URL-encoded commands bypass rules." },
                         { name: "Rate limiting / DoS", sev: "HIGH", sevClass: "sev-high", status: "not-covered" as const, statusLabel: "Not covered", detail: "No throttling on tool call volume. A runaway agent can make unlimited calls. Planned for v0.4.0." },
                         { name: "Tool description poisoning", sev: "MEDIUM", sevClass: "sev-medium", status: "not-covered" as const, statusLabel: "Not covered", detail: "mcpwall does not inspect or validate tool metadata from tools/list responses. Rug pull detection planned for v0.3.0." },
@@ -592,9 +592,9 @@ export default function ThreatModelPage() {
                     </thead>
                     <tbody>
                       <tr>
-                        <td className="name-col">Response inspection</td>
+                        <td className="name-col">Response inspection <StatusBadge status="covered">Shipped</StatusBadge></td>
                         <td><code>v0.2.0</code></td>
-                        <td>Scan server responses for secrets before they reach the LLM</td>
+                        <td>Outbound rules scan responses for secrets (redact), prompt injection (block), zero-width chars, and large payloads (flag)</td>
                       </tr>
                       <tr>
                         <td className="name-col">Tool integrity / rug pull detection</td>

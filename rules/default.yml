@@ -89,6 +89,20 @@ rules:
     action: deny
     message: "Blocked: detected secret/API key in tool arguments"
 
+# === OUTBOUND RULES (Response Inspection) ===
+outbound_rules:
+  - name: redact-secrets-in-responses
+    match:
+      secrets: true
+    action: redact
+    message: "Secret detected in server response and redacted"
+
+  - name: flag-large-responses
+    match:
+      response_size_exceeds: 102400
+    action: log_only
+    message: "Response exceeds 100KB"
+
 secrets:
   patterns:
     - name: aws-access-key

@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     siteName: "mcpwall",
     images: [
       {
-        url: "https://mcpwall.dev/og/blog-01-backdoor.png",
+        url: "https://mcpwall.dev/og/blog-03-owasp.png",
         width: 1200,
         height: 630,
       },
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: "How mcpwall Maps to the OWASP MCP Top 10",
     description:
       "A line-by-line mapping of the OWASP MCP Top 10 against mcpwall\u2019s coverage.",
-    images: ["https://mcpwall.dev/og/blog-01-backdoor.png"],
+    images: ["https://mcpwall.dev/og/blog-03-owasp.png"],
   },
   alternates: {
     canonical: "https://mcpwall.dev/blog/owasp-mcp-top-10",
@@ -59,7 +59,7 @@ const jsonLd = {
   headline: "How mcpwall Maps to the OWASP MCP Top 10",
   description:
     "A line-by-line mapping of the OWASP MCP Top 10 security threats against mcpwall\u2019s default rules. 2 blocked, 3 partially mitigated, 5 out of scope.",
-  image: "https://mcpwall.dev/og/blog-01-backdoor.png",
+  image: "https://mcpwall.dev/og/blog-03-owasp.png",
   author: { "@type": "Person", name: "Dom Behrens" },
   publisher: {
     "@type": "Organization",
@@ -552,9 +552,9 @@ export default function OwaspBlogPage() {
                 mcpwall can&rsquo;t prevent the poisoning. But when the LLM
                 follows the poisoned instruction and makes a tool call that
                 reads SSH keys, exfiltrates secrets, or runs destructive
-                commands, the rules catch it. Response inspection (v0.2.0) will
-                add a second layer by scanning server responses for embedded
-                instructions and leaked secrets.
+                commands, the inbound rules catch it. Response inspection
+                (v0.2.0) adds a second layer, scanning server responses for
+                leaked secrets (redacted) and embedded injection patterns (blocked).
               </StderrCallout>
             </FadeUp>
           </div>

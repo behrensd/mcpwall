@@ -66,15 +66,37 @@ export const ruleSchema = z.object({
   message: z.string().optional(),
 });
 
+export const outboundMatchSchema = z.object({
+  tool: z.string().optional(),
+  server: z.string().optional(),
+  secrets: z.boolean().optional(),
+  response_contains: z.array(z.string()).optional(),
+  response_contains_regex: z.array(validRegex).optional(),
+  response_size_exceeds: z.number().positive().optional(),
+}).refine(
+  (match) => Object.values(match).some((v) => v !== undefined),
+  { message: 'Outbound rule must have at least one match field' }
+);
+
+export const outboundRuleSchema = z.object({
+  name: z.string(),
+  match: outboundMatchSchema,
+  action: z.enum(['allow', 'deny', 'redact', 'log_only']),
+  message: z.string().optional(),
+});
+
 export const configSchema = z.object({
   version: z.number(),
   settings: z.object({
     log_dir: z.string(),
     log_level: z.enum(['debug', 'info', 'warn', 'error']),
     default_action: z.enum(['allow', 'deny', 'ask']),
-    log_args: z.enum(['full', 'none']).optional()
+    log_args: z.enum(['full', 'none']).optional(),
+    outbound_default_action: z.enum(['allow', 'deny', 'redact', 'log_only']).optional(),
+    log_redacted: z.enum(['none', 'hash', 'full']).optional(),
   }),
   rules: z.array(ruleSchema),
+  outbound_rules: z.array(outboundRuleSchema).optional(),
   secrets: z.object({
     patterns: z.array(secretPatternSchema)
   }).optional(),

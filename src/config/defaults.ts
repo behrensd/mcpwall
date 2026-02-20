@@ -3,7 +3,7 @@
  * Used when no config file exists
  */
 
-import type { Config, SecretPattern, Rule } from '../types.js';
+import type { Config, SecretPattern, Rule, OutboundRule } from '../types.js';
 
 /** Built-in secret patterns matching common API keys and tokens */
 export const DEFAULT_SECRET_PATTERNS: SecretPattern[] = [
@@ -81,6 +81,22 @@ export const DEFAULT_RULES: Rule[] = [
   }
 ];
 
+/** Built-in outbound rules for response inspection */
+export const DEFAULT_OUTBOUND_RULES: OutboundRule[] = [
+  {
+    name: 'redact-secrets-in-responses',
+    match: { secrets: true },
+    action: 'redact',
+    message: 'Secret detected in server response and redacted',
+  },
+  {
+    name: 'flag-large-responses',
+    match: { response_size_exceeds: 102400 },
+    action: 'log_only',
+    message: 'Response exceeds 100KB',
+  },
+];
+
 /**
  * Default configuration object
  * Provides sensible defaults with essential built-in rules as fallback.
@@ -93,6 +109,7 @@ export const DEFAULT_CONFIG: Config = {
     default_action: 'allow'
   },
   rules: DEFAULT_RULES,
+  outbound_rules: DEFAULT_OUTBOUND_RULES,
   secrets: {
     patterns: DEFAULT_SECRET_PATTERNS
   }

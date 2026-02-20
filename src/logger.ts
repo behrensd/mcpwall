@@ -85,12 +85,13 @@ export class Logger {
   private writeToStderr(entry: LogEntry): void {
     const timestamp = new Date(entry.ts).toISOString().substring(11, 19); // HH:MM:SS
     const action = this.formatAction(entry.action);
+    const direction = entry.direction === 'outbound' ? 'outbound ' : '';
     const method = entry.method || 'unknown';
     const tool = entry.tool ? ` ${entry.tool}` : '';
     const rule = entry.rule ? ` [${entry.rule}]` : '';
     const message = entry.message ? ` - ${entry.message}` : '';
 
-    const logLine = `[${timestamp}] ${action} ${method}${tool}${rule}${message}\n`;
+    const logLine = `[${timestamp}] ${action} ${direction}${method}${tool}${rule}${message}\n`;
     process.stderr.write(logLine);
   }
 
@@ -102,9 +103,11 @@ export class Logger {
   private getLogLevel(action: string): 'debug' | 'info' | 'warn' | 'error' {
     switch (action) {
       case 'deny':
+      case 'redact':
         return 'warn';
       case 'ask':
       case 'allow':
+      case 'log_only':
         return 'info';
       default:
         return 'info';
@@ -114,11 +117,15 @@ export class Logger {
   private formatAction(action: string): string {
     switch (action) {
       case 'allow':
-        return '\x1b[32mALLOW\x1b[0m'; // green
+        return '\x1b[32mALLOW\x1b[0m';    // green
       case 'deny':
-        return '\x1b[31mDENY\x1b[0m';  // red
+        return '\x1b[31mDENY\x1b[0m';     // red
       case 'ask':
-        return '\x1b[33mASK\x1b[0m';   // yellow
+        return '\x1b[33mASK\x1b[0m';      // yellow
+      case 'redact':
+        return '\x1b[36mREDACT\x1b[0m';   // cyan
+      case 'log_only':
+        return '\x1b[34mLOG\x1b[0m';      // blue
       default:
         return action.toUpperCase();
     }

@@ -23,7 +23,12 @@ export async function runInit(): Promise<void> {
   try {
     const configPaths = [
       { path: join(homedir(), '.claude.json'), name: 'Claude Code global config' },
-      { path: join(process.cwd(), '.mcp.json'), name: 'Claude Code project config' }
+      { path: join(process.cwd(), '.mcp.json'), name: 'Claude Code project config' },
+      { path: join(homedir(), '.cursor', 'mcp.json'), name: 'Cursor global config' },
+      { path: join(process.cwd(), '.cursor', 'mcp.json'), name: 'Cursor project config' },
+      { path: join(homedir(), '.config', 'windsurf', 'mcp.json'), name: 'Windsurf config' },
+      { path: join(homedir(), '.vscode', 'mcp.json'), name: 'VS Code global config' },
+      { path: join(process.cwd(), '.vscode', 'mcp.json'), name: 'VS Code project config' },
     ];
 
     const foundConfigs: Array<{ path: string; name: string; config: McpConfigFile }> = [];
@@ -45,8 +50,10 @@ export async function runInit(): Promise<void> {
     if (foundConfigs.length === 0) {
       process.stderr.write('No MCP server configurations found.\n');
       process.stderr.write('Looked for:\n');
-      process.stderr.write('  - ~/.claude.json\n');
-      process.stderr.write('  - ./.mcp.json\n\n');
+      for (const { path, name } of configPaths) {
+        process.stderr.write(`  - ${path} (${name})\n`);
+      }
+      process.stderr.write('\n');
       process.stderr.write('You can manually configure mcpwall by wrapping your MCP server commands:\n');
       process.stderr.write('  Original: npx -y @some/server\n');
       process.stderr.write('  Wrapped:  npx -y mcpwall -- npx -y @some/server\n\n');

@@ -4,9 +4,10 @@
  */
 
 import { spawn, type ChildProcess } from 'node:child_process';
-import type { JsonRpcMessage, Decision } from './types.js';
+import type { JsonRpcMessage, Decision, OutboundDecision, RequestContext } from './types.js';
 import { parseJsonRpcLineEx, createLineBuffer } from './parser.js';
 import type { Logger } from './logger.js';
+import type { OutboundPolicyEngine } from './engine/outbound-policy.js';
 
 export interface ProxyOptions {
   command: string;
@@ -16,6 +17,9 @@ export interface ProxyOptions {
   };
   logger: Logger;
   logArgs?: 'full' | 'none';
+  outboundPolicyEngine?: OutboundPolicyEngine;
+  logRedacted?: 'none' | 'hash' | 'full';
+  serverName?: string;
 }
 
 /**
@@ -23,7 +27,38 @@ export interface ProxyOptions {
  * Returns the child process for lifecycle management
  */
 export function createProxy(options: ProxyOptions): ChildProcess {
-  const { command, args, policyEngine, logger, logArgs = 'none' } = options;
+  const { command, args, policyEngine, logger, logArgs = 'none', outboundPolicyEngine, logRedacted = 'none', serverName } = options;
+
+  // Request-response correlation: maps JSON-RPC id to request context
+  const pendingRequests = new Map<string | number, RequestContext>();
+  const REQUEST_TTL_MS = 60_000;
+
+  function trackRequest(msg: JsonRpcMessage): void {
+    if (msg.id !== undefined && msg.id !== null && msg.method === 'tools/call') {
+      const params = msg.params as { name?: string } | undefined;
+      pendingRequests.set(msg.id, {
+        tool: params?.name,
+        method: msg.method,
+        ts: Date.now(),
+      });
+    }
+  }
+
+  function resolveRequest(id: string | number | null | undefined): RequestContext | undefined {
+    if (id === undefined || id === null) return undefined;
+    const ctx = pendingRequests.get(id);
+    if (ctx) {
+      pendingRequests.delete(id);
+    }
+    // Clean stale entries
+    const now = Date.now();
+    for (const [key, val] of pendingRequests) {
+      if (now - val.ts > REQUEST_TTL_MS) {
+        pendingRequests.delete(key);
+      }
+    }
+    return ctx;
+  }
 
   // inherit stderr so server's debug output goes to stderr
   const child = spawn(command, args, {
@@ -111,6 +146,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
         }
 
         evaluateMessage(msg, decision);
+        trackRequest(msg);
         if (child.stdin && !child.stdin.destroyed) {
           child.stdin.write(line + '\n');
         }
@@ -132,6 +168,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
             }
           } else {
             evaluateMessage(msg, decision);
+            trackRequest(msg);
             forwarded.push(msg);
           }
         }
@@ -174,28 +211,135 @@ export function createProxy(options: ProxyOptions): ChildProcess {
   });
 
   // === OUTBOUND PATH: MCP Server → Firewall → Claude ===
+
+  function evaluateOutbound(msg: JsonRpcMessage): void {
+    // No outbound engine: passthrough with basic logging
+    if (!outboundPolicyEngine) {
+      process.stdout.write(JSON.stringify(msg) + '\n');
+      if (msg.result !== undefined || msg.error !== undefined) {
+        logger.log({
+          ts: new Date().toISOString(),
+          method: 'response',
+          tool: undefined,
+          action: 'allow',
+          rule: null,
+          direction: 'outbound',
+          message: msg.error ? `Error: ${msg.error.message}` : undefined,
+        });
+      }
+      return;
+    }
+
+    // Correlate with original request
+    const ctx = resolveRequest(msg.id);
+    const toolName = ctx?.tool;
+
+    // Only evaluate responses (messages with result or error)
+    if (msg.result === undefined && msg.error === undefined) {
+      // Not a response (e.g., a server notification), pass through
+      process.stdout.write(JSON.stringify(msg) + '\n');
+      return;
+    }
+
+    const decision: OutboundDecision = outboundPolicyEngine.evaluate(msg, toolName, serverName);
+
+    switch (decision.action) {
+      case 'allow': {
+        process.stdout.write(JSON.stringify(msg) + '\n');
+        logger.log({
+          ts: new Date().toISOString(),
+          method: 'response',
+          tool: toolName,
+          action: 'allow',
+          rule: decision.rule,
+          direction: 'outbound',
+          message: msg.error ? `Error: ${msg.error.message}` : undefined,
+        });
+        break;
+      }
+
+      case 'deny': {
+        const blocked: JsonRpcMessage = {
+          jsonrpc: '2.0',
+          id: msg.id,
+          result: {
+            content: [{
+              type: 'text',
+              text: `[BLOCKED BY MCPWALL] ${decision.message || 'Response blocked by outbound policy'}`,
+            }],
+          },
+        };
+        process.stdout.write(JSON.stringify(blocked) + '\n');
+        logger.log({
+          ts: new Date().toISOString(),
+          method: 'response',
+          tool: toolName,
+          action: 'deny',
+          rule: decision.rule,
+          direction: 'outbound',
+          message: decision.message,
+        });
+        break;
+      }
+
+      case 'redact': {
+        const { message: redactedMsg, result: redactionResult } = outboundPolicyEngine.redactResponse(msg);
+        process.stdout.write(JSON.stringify(redactedMsg) + '\n');
+        const patternNames = redactionResult.matches.map((m) => m.pattern);
+        logger.log({
+          ts: new Date().toISOString(),
+          method: 'response',
+          tool: toolName,
+          action: 'redact',
+          rule: decision.rule,
+          direction: 'outbound',
+          message: decision.message,
+          redacted_patterns: patternNames.length > 0 ? patternNames : undefined,
+        });
+        break;
+      }
+
+      case 'log_only': {
+        process.stdout.write(JSON.stringify(msg) + '\n');
+        logger.log({
+          ts: new Date().toISOString(),
+          method: 'response',
+          tool: toolName,
+          action: 'log_only',
+          rule: decision.rule,
+          direction: 'outbound',
+          message: decision.message,
+        });
+        break;
+      }
+    }
+  }
+
   const outboundBuffer = createLineBuffer((line) => {
     try {
-      // Phase 1: forward all responses without filtering
-      process.stdout.write(line + '\n');
-
       const result = parseJsonRpcLineEx(line);
-      if (result?.type === 'single') {
-        const msg = result.message;
-        if (msg.result !== undefined || msg.error !== undefined) {
-          logger.log({
-            ts: new Date().toISOString(),
-            method: 'response',
-            tool: undefined,
-            action: 'allow',
-            rule: null,
-            message: msg.error ? `Error: ${msg.error.message}` : undefined
-          });
+
+      if (!result) {
+        // Not valid JSON-RPC, pass through raw
+        process.stdout.write(line + '\n');
+        return;
+      }
+
+      if (result.type === 'single') {
+        evaluateOutbound(result.message);
+        return;
+      }
+
+      if (result.type === 'batch') {
+        for (const msg of result.messages) {
+          evaluateOutbound(msg);
         }
+        return;
       }
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       process.stderr.write(`[mcpwall] Error processing outbound message: ${message}\n`);
+      // Fail-open: forward raw line on error
       try { process.stdout.write(line + '\n'); } catch { /* EPIPE — client disconnected */ }
     }
   });

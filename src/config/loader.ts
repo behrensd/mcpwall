@@ -73,6 +73,12 @@ function mergeConfigs(global: Config, project: Config): Config {
     },
     // Project rules first (higher priority), then global rules
     rules: [...project.rules, ...global.rules],
+    outbound_rules: [
+      ...(project.outbound_rules || []),
+      ...(global.outbound_rules || [])
+    ].length > 0
+      ? [...(project.outbound_rules || []), ...(global.outbound_rules || [])]
+      : undefined,
     secrets: {
       patterns: [
         ...(project.secrets?.patterns || []),

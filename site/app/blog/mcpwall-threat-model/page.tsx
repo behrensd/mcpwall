@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     siteName: "mcpwall",
     images: [
       {
-        url: "https://mcpwall.dev/og/blog-01-backdoor.png",
+        url: "https://mcpwall.dev/og/blog-02-threat-model.png",
         width: 1200,
         height: 630,
       },
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
     title: "What mcpwall Does and Doesn\u2019t Protect Against",
     description:
       "A transparent look at mcpwall\u2019s security coverage. 8 attack classes blocked, 13 known limitations.",
-    images: ["https://mcpwall.dev/og/blog-01-backdoor.png"],
+    images: ["https://mcpwall.dev/og/blog-02-threat-model.png"],
   },
   alternates: {
     canonical: "https://mcpwall.dev/blog/mcpwall-threat-model",
@@ -59,7 +59,7 @@ const jsonLd = {
   headline: "What mcpwall Does and Doesn\u2019t Protect Against",
   description:
     "A transparent look at mcpwall\u2019s security coverage: 8 attack classes blocked, 13 known limitations, and the assumptions we make.",
-  image: "https://mcpwall.dev/og/blog-01-backdoor.png",
+  image: "https://mcpwall.dev/og/blog-02-threat-model.png",
   author: { "@type": "Person", name: "Dom Behrens" },
   publisher: {
     "@type": "Organization",
@@ -82,7 +82,7 @@ const coveredItems = [
 ];
 
 const notCovered = [
-  { severity: "HIGH" as const, name: "Response-side attacks", detail: "Server responses are forwarded unfiltered. A compromised server can return secrets or malicious content in tool results.", planned: "v0.2.0" },
+  { severity: "HIGH" as const, name: "Response-side attacks", detail: "Server responses are now scanned by outbound rules. Secrets are redacted, prompt injection patterns are blocked, and suspicious content is flagged. Shipped in v0.2.0." },
   { severity: "HIGH" as const, name: "Base64 / URL encoding bypass", detail: "Rules match literal strings only. Base64-encoded secrets or URL-encoded commands pass through. Decoding before matching would add latency and complexity." },
   { severity: "HIGH" as const, name: "Rate limiting / DoS", detail: "No throttling on tool call volume. A runaway agent can make unlimited calls.", planned: "v0.4.0" },
   { severity: "MEDIUM" as const, name: "Tool description poisoning / rug pulls", detail: "mcpwall does not inspect tool metadata from tools/list. A server can change descriptions after trust is established.", planned: "v0.3.0" },
@@ -92,7 +92,7 @@ const notCovered = [
 ];
 
 const roadmap = [
-  { version: "v0.2.0", feature: "Response inspection \u2014 scan server responses for secrets" },
+  { version: "v0.2.0", feature: "Response inspection \u2014 outbound rules scan responses for secrets, injection, and suspicious content (shipped)" },
   { version: "v0.3.0", feature: "Tool integrity / rug pull detection \u2014 hash descriptions, detect changes" },
   { version: "v0.3-4", feature: "HTTP/SSE proxy mode \u2014 support remote MCP servers" },
   { version: "v0.4.0", feature: "Rate limiting \u2014 throttle excessive tool calls" },
@@ -237,8 +237,8 @@ export default function ThreatModelBlogPage() {
               </FadeUp>
 
               <aside className="marginalia hidden xl:block mt-2">
-                Response inspection is the #1 priority for v0.2.0. It will scan
-                server responses for secrets before they reach the LLM.
+                Response inspection shipped in v0.2.0. Outbound rules now scan
+                server responses for secrets, prompt injection, and suspicious content.
               </aside>
             </div>
           </div>

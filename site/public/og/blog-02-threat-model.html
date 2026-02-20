@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    background: #08090d;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .glow {
+    position: absolute;
+    top: -100px;
+    right: -150px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(234, 88, 12, 0.15) 0%, rgba(234, 88, 12, 0.05) 40%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .glow-blue {
+    position: absolute;
+    bottom: -200px;
+    left: -100px;
+    width: 500px;
+    height: 500px;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .content {
+    position: relative;
+    z-index: 1;
+    padding: 52px 60px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .badge {
+    display: inline-block;
+    background: rgba(234, 88, 12, 0.9);
+    color: white;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin-bottom: 28px;
+    width: fit-content;
+  }
+
+  .title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-style: italic;
+    font-size: 62px;
+    color: #ffffff;
+    line-height: 1.05;
+    max-width: 900px;
+    margin-bottom: 24px;
+  }
+
+  .subtitle {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.5;
+    max-width: 650px;
+  }
+
+  .bottom {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .brand-tagline {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .terminal {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12.5px;
+    line-height: 1.7;
+    text-align: right;
+  }
+
+  .terminal .covered {
+    color: rgba(34, 197, 94, 0.8);
+  }
+
+  .terminal .partial {
+    color: rgba(250, 204, 21, 0.7);
+  }
+
+  .terminal .not-covered {
+    color: rgba(239, 68, 68, 0.5);
+  }
+
+  .terminal .label {
+    color: rgba(255, 255, 255, 0.35);
+  }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="glow-blue"></div>
+  <div class="content">
+    <div class="badge">Threat Model</div>
+    <div class="title">What mcpwall Does<br>and Doesn't<br>Protect Against</div>
+    <div class="subtitle">8 attack classes blocked. 13 known limitations.<br>An honest security assessment.</div>
+    <div class="bottom">
+      <div class="brand">
+        <span class="brand-name">mcpwall</span>
+        <span class="brand-tagline">iptables for MCP &middot; Dom Behrens</span>
+      </div>
+      <div class="terminal">
+        <div><span class="label">&bull;</span> <span class="covered">SSH key theft</span> <span class="label">BLOCKED</span></div>
+        <div><span class="label">&bull;</span> <span class="covered">Secret exfiltration</span> <span class="label">BLOCKED</span></div>
+        <div><span class="label">&bull;</span> <span class="partial">Tool poisoning</span> <span class="label">PARTIAL</span></div>
+        <div><span class="label">&bull;</span> <span class="not-covered">Supply chain</span> <span class="label">OUT OF SCOPE</span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

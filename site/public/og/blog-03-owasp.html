@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    width: 1200px;
+    height: 630px;
+    background: #08090d;
+    overflow: hidden;
+    position: relative;
+  }
+
+  .glow {
+    position: absolute;
+    top: -100px;
+    right: -150px;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(234, 88, 12, 0.15) 0%, rgba(234, 88, 12, 0.05) 40%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .glow-cyan {
+    position: absolute;
+    bottom: -150px;
+    left: 200px;
+    width: 400px;
+    height: 400px;
+    background: radial-gradient(circle, rgba(34, 211, 238, 0.06) 0%, transparent 60%);
+    pointer-events: none;
+  }
+
+  .content {
+    position: relative;
+    z-index: 1;
+    padding: 52px 60px;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .badge {
+    display: inline-block;
+    background: rgba(234, 88, 12, 0.9);
+    color: white;
+    font-family: 'Outfit', sans-serif;
+    font-weight: 500;
+    font-size: 13px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 6px 14px;
+    border-radius: 4px;
+    margin-bottom: 28px;
+    width: fit-content;
+  }
+
+  .title {
+    font-family: 'Syne', sans-serif;
+    font-weight: 800;
+    font-style: italic;
+    font-size: 60px;
+    color: #ffffff;
+    line-height: 1.05;
+    max-width: 900px;
+    margin-bottom: 24px;
+  }
+
+  .subtitle {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 400;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.55);
+    line-height: 1.5;
+    max-width: 650px;
+  }
+
+  .score {
+    display: flex;
+    gap: 20px;
+    margin-top: 8px;
+  }
+
+  .score-item {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    padding: 4px 10px;
+    border-radius: 3px;
+  }
+
+  .score-blocked {
+    background: rgba(34, 197, 94, 0.15);
+    color: rgba(34, 197, 94, 0.9);
+  }
+
+  .score-partial {
+    background: rgba(250, 204, 21, 0.12);
+    color: rgba(250, 204, 21, 0.85);
+  }
+
+  .score-none {
+    background: rgba(239, 68, 68, 0.1);
+    color: rgba(239, 68, 68, 0.6);
+  }
+
+  .bottom {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-weight: 500;
+    font-size: 20px;
+    color: rgba(255, 255, 255, 0.9);
+  }
+
+  .brand-tagline {
+    font-family: 'Outfit', sans-serif;
+    font-weight: 400;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  .terminal {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    line-height: 1.6;
+    text-align: right;
+  }
+
+  .terminal .id {
+    color: rgba(255, 255, 255, 0.3);
+  }
+
+  .terminal .name {
+    color: rgba(255, 255, 255, 0.55);
+  }
+
+  .terminal .blocked {
+    color: rgba(34, 197, 94, 0.8);
+  }
+
+  .terminal .partial {
+    color: rgba(250, 204, 21, 0.7);
+  }
+
+  .terminal .none {
+    color: rgba(239, 68, 68, 0.45);
+  }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+  <div class="glow-cyan"></div>
+  <div class="content">
+    <div class="badge">OWASP MCP Top 10</div>
+    <div class="title">How mcpwall Maps<br>to the OWASP<br>MCP Top 10</div>
+    <div class="subtitle">A line-by-line mapping against the MCP threat taxonomy.</div>
+    <div class="score">
+      <span class="score-item score-blocked">2 BLOCKED</span>
+      <span class="score-item score-partial">3 PARTIAL</span>
+      <span class="score-item score-none">5 NOT COVERED</span>
+    </div>
+    <div class="bottom">
+      <div class="brand">
+        <span class="brand-name">mcpwall</span>
+        <span class="brand-tagline">iptables for MCP &middot; Dom Behrens</span>
+      </div>
+      <div class="terminal">
+        <div><span class="id">MCP01</span> <span class="name">Secret Exposure</span> <span class="blocked">BLOCKED</span></div>
+        <div><span class="id">MCP03</span> <span class="name">Tool Poisoning</span> <span class="partial">PARTIAL</span></div>
+        <div><span class="id">MCP05</span> <span class="name">Command Injection</span> <span class="blocked">BLOCKED</span></div>
+        <div><span class="id">MCP06</span> <span class="name">Prompt Injection</span> <span class="partial">PARTIAL</span></div>
+        <div><span class="id">MCP09</span> <span class="name">Shadow Servers</span> <span class="none">NOT COVERED</span></div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
