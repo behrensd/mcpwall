@@ -2,7 +2,7 @@
 # mcpwall
 
 [![npm version](https://img.shields.io/npm/v/mcpwall)](https://www.npmjs.com/package/mcpwall)
-[![CI](https://github.com/behrensd/mcp-firewall/actions/workflows/ci.yml/badge.svg)](https://github.com/behrensd/mcp-firewall/actions/workflows/ci.yml)
+[![CI](https://github.com/behrensd/mcpwall/actions/workflows/ci.yml/badge.svg)](https://github.com/behrensd/mcpwall/actions/workflows/ci.yml)
 [![Node.js](https://img.shields.io/node/v/mcpwall)](https://nodejs.org)
 [![License: Apache-2.0](https://img.shields.io/badge/license-Apache--2.0-blue)](./LICENSE)
 

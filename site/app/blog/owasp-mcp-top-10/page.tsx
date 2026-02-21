@@ -690,7 +690,7 @@ export default function OwaspBlogPage() {
 
             <FadeUp className="mt-10 flex flex-col sm:flex-row gap-4">
               <a
-                href="https://github.com/behrensd/mcp-firewall"
+                href="https://github.com/behrensd/mcpwall"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-lg font-body font-normal text-sm text-zinc-100 transition-colors no-underline"

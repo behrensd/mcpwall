@@ -99,7 +99,7 @@ export default function Nav({
             </Link>
           ))}
           <a
-            href="https://github.com/behrensd/mcp-firewall"
+            href="https://github.com/behrensd/mcpwall"
             target="_blank"
             rel="noopener noreferrer"
             className="text-sm text-zinc-400 hover:text-zinc-200 transition-colors font-body flex items-center gap-1.5"

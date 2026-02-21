@@ -86,7 +86,7 @@ export default function MobileNav({ links }: MobileNavProps) {
               </Link>
             ))}
             <a
-              href="https://github.com/behrensd/mcp-firewall"
+              href="https://github.com/behrensd/mcpwall"
               target="_blank"
               rel="noopener noreferrer"
               onClick={close}

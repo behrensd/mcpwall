@@ -75,5 +75,5 @@ echo -e "  ${D}━━━━━━━━━━━━━━━━━━━━━�
 echo -e "  ${G}1 allowed${N}  ${R}2 blocked${N}  ${C}1 redacted${N}  ${D}0 config needed${N}"
 echo ""
 echo -e "  ${C}npm install -g mcpwall${N}"
-echo -e "  ${D}github.com/behrensd/mcp-firewall${N}"
+echo -e "  ${D}github.com/behrensd/mcpwall${N}"
 echo ""

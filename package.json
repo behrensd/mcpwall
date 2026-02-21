@@ -32,12 +32,12 @@
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/behrensd/mcp-firewall.git"
+    "url": "git+https://github.com/behrensd/mcpwall.git"
   },
   "mcpName": "io.github.behrensd/mcpwall",
   "homepage": "https://mcpwall.dev",
   "bugs": {
-    "url": "https://github.com/behrensd/mcp-firewall/issues"
+    "url": "https://github.com/behrensd/mcpwall/issues"
   },
   "engines": {
     "node": ">=20"

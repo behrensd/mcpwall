@@ -637,7 +637,7 @@ export default function ThreatModelPage() {
                     </a>{" "}
                     or open a security advisory on{" "}
                     <a
-                      href="https://github.com/behrensd/mcp-firewall/security/advisories"
+                      href="https://github.com/behrensd/mcpwall/security/advisories"
                       className="prose-link"
                       target="_blank"
                       rel="noopener noreferrer"
@@ -650,12 +650,12 @@ export default function ThreatModelPage() {
                     This threat model is maintained alongside the codebase and
                     updated with each release. The source is at{" "}
                     <a
-                      href="https://github.com/behrensd/mcp-firewall"
+                      href="https://github.com/behrensd/mcpwall"
                       className="prose-link"
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      github.com/behrensd/mcp-firewall
+                      github.com/behrensd/mcpwall
                     </a>
                     .
                   </p>

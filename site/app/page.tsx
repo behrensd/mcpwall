@@ -647,7 +647,7 @@ export default function HomePage() {
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mt-10">
             <a
-              href="https://github.com/behrensd/mcp-firewall"
+              href="https://github.com/behrensd/mcpwall"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-6 py-3 bg-brand-500 hover:bg-brand-600 text-white font-body font-normal rounded-lg transition-colors text-sm"

@@ -5,7 +5,7 @@
   "description": "iptables for MCP — blocks dangerous tool calls, scans for secrets, logs everything.",
   "websiteUrl": "https://mcpwall.dev",
   "repository": {
-    "url": "https://github.com/behrensd/mcp-firewall",
+    "url": "https://github.com/behrensd/mcpwall",
     "source": "github"
   },
   "version": "0.2.0",

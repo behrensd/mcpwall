@@ -15,7 +15,7 @@ export default function Footer({ variant = "landing" }: FooterProps) {
               </div>
               <div className="flex items-center gap-6 mt-4">
                 <a
-                  href="https://github.com/behrensd/mcp-firewall"
+                  href="https://github.com/behrensd/mcpwall"
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors font-mono"
@@ -55,7 +55,7 @@ export default function Footer({ variant = "landing" }: FooterProps) {
             mcpwall
           </span>
           <a
-            href="https://github.com/behrensd/mcp-firewall"
+            href="https://github.com/behrensd/mcpwall"
             className="text-xs text-zinc-600 hover:text-zinc-400 transition-colors"
           >
             GitHub
