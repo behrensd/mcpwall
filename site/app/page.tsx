@@ -57,7 +57,7 @@ export default function HomePage() {
           <FadeUp className="mb-8">
             <Badge className="bg-red-500/10 text-red-400 border border-red-500/20">
               <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
-              CVE-2025-6514 &mdash; 437K+ MCP installs affected
+              CVE-2025-6514: 437K+ MCP installs affected
             </Badge>
           </FadeUp>
 
@@ -225,7 +225,7 @@ export default function HomePage() {
             <div className="text-xs font-mono text-brand-400 mb-3 tracking-wider uppercase flex items-center gap-2">
               After
               <span className="text-[10px] text-brand-500/80 font-normal normal-case">
-                &mdash; just add mcpwall
+                + mcpwall
               </span>
             </div>
             <CodeBlock borderColor="rgba(6, 182, 212, 0.12)">
@@ -557,7 +557,7 @@ export default function HomePage() {
             <div className="flex flex-col md:flex-row md:items-start gap-8">
               <div className="flex-1">
                 <Badge className="bg-brand-500/10 text-brand-400 border border-brand-500/20 mb-4">
-                  EU AI Act &mdash; Aug 2, 2026
+                  EU AI Act: Aug 2, 2026
                 </Badge>
                 <h3 className="font-display font-normal text-2xl tracking-tight mb-3">
                   Built for European compliance
@@ -575,31 +575,31 @@ export default function HomePage() {
                   <span className="text-brand-400 font-mono text-xs">
                     Art. 25
                   </span>{" "}
-                  &mdash; Data protection by design
+                  Data protection by design
                 </div>
                 <div className="text-zinc-400">
                   <span className="text-brand-400 font-mono text-xs">
                     Art. 5(2)
                   </span>{" "}
-                  &mdash; Accountability &amp; evidence
+                  Accountability &amp; evidence
                 </div>
                 <div className="text-zinc-400">
                   <span className="text-brand-400 font-mono text-xs">
                     Art. 32
                   </span>{" "}
-                  &mdash; Security of processing
+                  Security of processing
                 </div>
                 <div className="text-zinc-400">
                   <span className="text-brand-400 font-mono text-xs">
                     AI Act
                   </span>{" "}
-                  &mdash; Supports oversight principles
+                  Supports oversight principles
                 </div>
                 <div className="text-zinc-400">
                   <span className="text-brand-400 font-mono text-xs">
                     Schrems II
                   </span>{" "}
-                  &mdash; No data leaves your machine
+                  No data leaves your machine
                 </div>
               </div>
             </div>

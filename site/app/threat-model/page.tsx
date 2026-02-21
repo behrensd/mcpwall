@@ -76,7 +76,7 @@ export default function ThreatModelPage() {
                     SECURITY REFERENCE
                   </span>
                   <span className="font-mono text-[11px] text-zinc-600 tracking-wide">
-                    v0.2.0 &mdash; 2026-02-20
+                    v0.2.0 / 2026-02-20
                   </span>
                 </div>
 
@@ -87,7 +87,7 @@ export default function ThreatModelPage() {
                 <p className="prose-body max-w-2xl text-lg">
                   What mcpwall protects against, what it doesn&rsquo;t, and the
                   assumptions it makes. This document is intentionally
-                  transparent&thinsp;&mdash;&thinsp;security tools that hide
+                  transparent. Security tools that hide
                   their limitations aren&rsquo;t security tools.
                 </p>
               </header>
@@ -275,7 +275,7 @@ export default function ThreatModelPage() {
                         { name: "Pipe-to-shell (curl|bash)", status: "covered" as const, rule: "block-pipe-to-shell", mechanism: "Regex: curl/wget/fetch piped to bash/sh/zsh/python/node" },
                         { name: "Reverse shells", status: "covered" as const, rule: "block-reverse-shells", mechanism: "Regex: netcat, /dev/tcp/, bash -i, mkfifo, socat" },
                         { name: "Secret/API key leakage", status: "covered" as const, rule: "block-secret-leakage", mechanism: "10 secret patterns (AWS, GitHub, OpenAI, Stripe, etc.) + Shannon entropy threshold" },
-                        { name: "JSON-RPC batch bypass", status: "mitigated" as const, rule: "\u2014", mechanism: "Each message in a batch is individually evaluated (C1 fix, v0.1.1)" },
+                        { name: "JSON-RPC batch bypass", status: "mitigated" as const, rule: "n/a", mechanism: "Each message in a batch is individually evaluated (C1 fix, v0.1.1)" },
                         { name: "ReDoS in config", status: "mitigated" as const, rule: "\u2014", mechanism: "Heuristic detection of nested quantifiers at config load time" },
                         { name: "Symlink path traversal", status: "mitigated" as const, rule: "\u2014", mechanism: "realpathSync resolves symlinks for not_under matcher (existing paths only)" },
                         { name: "Process crash on bad input", status: "mitigated" as const, rule: "\u2014", mechanism: "try-catch in proxy hot path; fails open (forwards raw line, stays alive)" },
@@ -308,8 +308,8 @@ export default function ThreatModelPage() {
                   Known limitations
                 </h2>
                 <p className="prose-body max-w-2xl mb-8">
-                  These are attack classes that mcpwall v0.1.x does{" "}
-                  <strong>not</strong> mitigate. Some are planned for future
+                  These are attack classes that mcpwall does{" "}
+                  <strong>not</strong> yet mitigate. Some are planned for future
                   versions; others are out of scope by design.
                 </p>
 
@@ -549,7 +549,7 @@ export default function ThreatModelPage() {
                     </div>
                     <div className="prose-body text-sm">
                       Enforces policy on every tool call as it happens. Catches
-                      what scanners miss &mdash; runtime arguments, secrets in
+                      what scanners miss: runtime arguments, secrets in
                       transit, dangerous commands.
                     </div>
                   </div>

@@ -159,7 +159,7 @@ export default function BackdoorBlogPage() {
                   <span className="text-zinc-100 font-normal">
                     8,600+ MCP servers
                   </span>{" "}
-                  listed on public directories&thinsp;&mdash;&thinsp;every action
+                  listed on public directories. Every action
                   goes through MCP.
                 </p>
                 <p className="font-body text-lg md:text-xl text-zinc-300 leading-relaxed max-w-2xl mt-6">
@@ -277,7 +277,7 @@ export default function BackdoorBlogPage() {
                   <span className="text-danger-400 font-normal">
                     4 of 120
                   </span>{" "}
-                  poisoned servers &mdash; a 3.3% detection rate. Scanners are a
+                  poisoned servers, a 3.3% detection rate. Scanners are a
                   useful first layer, but runtime enforcement is needed too.
                 </p>
                 <div className="font-mono text-[10px] text-zinc-600 mt-4">
@@ -441,7 +441,7 @@ export default function BackdoorBlogPage() {
                 <br />
                 <br />
                 Rules are evaluated top-to-bottom, first match
-                wins&thinsp;&mdash;&thinsp;exactly like iptables.
+                wins. Exactly like iptables.
               </aside>
             </div>
           </div>
@@ -603,7 +603,7 @@ export default function BackdoorBlogPage() {
                 <div className="text-xs font-mono text-brand-400 mb-3 tracking-wider uppercase flex items-center gap-2">
                   After{" "}
                   <span className="text-[10px] text-brand-500/60 font-normal normal-case">
-                    &mdash; one line
+                    (one line change)
                   </span>
                 </div>
                 <CodeBlock borderColor="rgba(6, 182, 212, 0.12)">
@@ -801,7 +801,7 @@ export default function BackdoorBlogPage() {
               >
                 <p className="font-body text-zinc-300 leading-relaxed text-[15px]">
                   MCP adoption is
-                  accelerating&thinsp;&mdash;&thinsp;it&rsquo;s been donated to
+                  accelerating. It&rsquo;s been donated to
                   the Linux Foundation, every major AI coding tool supports it,
                   and the server ecosystem is growing by hundreds per week. The
                   attack surface is growing faster than the security tooling. If

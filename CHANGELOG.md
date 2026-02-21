@@ -27,6 +27,11 @@
 - `rules/default.yml`: Added outbound rules for secret redaction and large response flagging
 - `rules/strict.yml`: Added outbound rules for prompt injection blocking, shell pattern detection, zero-width char detection, and tighter size limits
 
+### Stats
+
+- 96 tests (30 new for outbound scanning)
+- 43.83 KB bundle
+
 ## 0.1.2 (2026-02-17)
 
 ### Registry & Discovery

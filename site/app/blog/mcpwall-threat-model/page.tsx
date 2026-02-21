@@ -88,7 +88,7 @@ const notCovered = [
   { severity: "MEDIUM" as const, name: "Tool description poisoning / rug pulls", detail: "mcpwall does not inspect tool metadata from tools/list. A server can change descriptions after trust is established.", planned: "v0.3.0" },
   { severity: "MEDIUM" as const, name: "Prompt injection", detail: "mcpwall can\u2019t detect semantic manipulation of the LLM. It sees the resulting tool call, not the manipulation \u2014 but it may still catch the dangerous arguments." },
   { severity: "MEDIUM" as const, name: "Shell metacharacter bypass", detail: "Pipes (|) caught. Semicolons (;), &&, backticks, and $() not covered by default rules. Custom rules can address this." },
-  { severity: "MEDIUM" as const, name: "Unicode / DNS exfiltration / env leakage", detail: "Homoglyph attacks, DNS subdomain encoding, and inherited environment variables are out of scope for v0.1.x." },
+  { severity: "MEDIUM" as const, name: "Unicode / DNS exfiltration / env leakage", detail: "Homoglyph attacks, DNS subdomain encoding, and inherited environment variables are out of scope." },
 ];
 
 const roadmap = [
@@ -183,15 +183,17 @@ export default function ThreatModelBlogPage() {
                     Rules are YAML, evaluated top-to-bottom, first match wins.
                   </p>
                   <p>
-                    The key word is <strong>request firewall</strong>. In v0.1.x,
-                    mcpwall inspects what your AI agent <em>asks to do</em>. It
-                    does not yet inspect what the server <em>sends back</em>.
+                    The key word is <strong>bidirectional firewall</strong>. Since
+                    v0.2.0, mcpwall inspects both what your AI agent{" "}
+                    <em>asks to do</em> and what the server{" "}
+                    <em>sends back</em>. Secrets in responses are redacted,
+                    prompt injection patterns are blocked.
                   </p>
                 </div>
 
                 <div className="arch-box mb-8">
                   <div className="text-zinc-500 text-[11px] uppercase tracking-wider mb-3">
-                    Inbound &mdash; inspected &amp; filtered
+                    Inbound: inspected &amp; filtered
                   </div>
                   <div className="flex flex-wrap items-center gap-2 mb-3">
                     <span className="arch-node bg-zinc-800 text-zinc-300 text-[12px]">
@@ -213,7 +215,7 @@ export default function ThreatModelBlogPage() {
                     </span>
                   </div>
                   <div className="text-zinc-500 text-[11px] uppercase tracking-wider mb-3 mt-4">
-                    Outbound &mdash; logged, not filtered
+                    Outbound: inspected since v0.2.0
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="arch-node bg-zinc-800 text-zinc-300 text-[12px]">
@@ -303,9 +305,9 @@ export default function ThreatModelBlogPage() {
                     Known limitations
                   </h2>
                   <p className="prose-body mb-8 max-w-2xl">
-                    These are attack classes that mcpwall v0.1.x does{" "}
-                    <strong>not</strong> mitigate. We&rsquo;re publishing them
-                    because hiding limitations is worse than having them.
+                    These are attack classes that mcpwall does{" "}
+                    <strong>not</strong> yet mitigate. We&rsquo;re publishing
+                    them because hiding limitations is worse than having them.
                   </p>
                 </FadeUp>
 
