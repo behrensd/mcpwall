@@ -1,0 +1,92 @@
+# mcpwall recipe for @modelcontextprotocol/server-filesystem
+# Drop this into your config (or use alongside your main config) for filesystem MCP.
+# Restricts file access to ${PROJECT_DIR} and blocks common traversal/exfiltration patterns.
+version: 1
+
+settings:
+  log_dir: ~/.mcpwall/logs
+  log_level: info
+  default_action: allow
+
+rules:
+  # Deny reads outside the project directory
+  - name: restrict-reads-to-project
+    match:
+      method: tools/call
+      tool: "read_file"
+      arguments:
+        path:
+          not_under: "${PROJECT_DIR}"
+    action: deny
+    message: "Blocked: file read outside project directory"
+
+  # Deny directory listings outside the project directory
+  - name: restrict-listings-to-project
+    match:
+      method: tools/call
+      tool: "read_directory"
+      arguments:
+        path:
+          not_under: "${PROJECT_DIR}"
+    action: deny
+    message: "Blocked: directory listing outside project directory"
+
+  # Deny writes outside the project directory
+  - name: restrict-writes-to-project
+    match:
+      method: tools/call
+      tool: "write_file"
+      arguments:
+        path:
+          not_under: "${PROJECT_DIR}"
+    action: deny
+    message: "Blocked: file write outside project directory"
+
+  # Block dotfile access (hidden config files that may contain secrets)
+  - name: block-dotfiles
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "/\\.[a-zA-Z]"
+    action: deny
+    message: "Blocked: access to hidden/dotfiles"
+
+  # Block parent directory traversal patterns
+  - name: block-path-traversal
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "\\.\\."
+    action: deny
+    message: "Blocked: path traversal pattern detected"
+
+  # Block SSH keys specifically (belt-and-suspenders)
+  - name: block-ssh-keys
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(\\.ssh/|id_rsa|id_ed25519|id_ecdsa)"
+    action: deny
+    message: "Blocked: access to SSH keys"
+
+outbound_rules:
+  - name: redact-secrets-in-responses
+    match:
+      secrets: true
+    action: redact
+    message: "Secret detected in filesystem response and redacted"
+
+secrets:
+  patterns:
+    - name: aws-access-key
+      regex: "AKIA[0-9A-Z]{16}"
+    - name: github-token
+      regex: "(gh[ps]_[A-Za-z0-9_]{36,}|github_pat_[A-Za-z0-9_]{22,})"
+    - name: private-key-header
+      regex: "-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"

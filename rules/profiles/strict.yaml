@@ -1,4 +1,8 @@
-# Note: also available as --profile strict via mcpwall init
+# mcpwall strict profile — deny-by-default whitelist mode.
+# Use: mcpwall init --profile strict
+# Blocks everything except explicitly allowed operations. Requires customization
+# for your specific tools. See rules/strict.yml for inline commentary.
+# Note: rules/strict.yml (using -c flag) is also kept for backward compatibility.
 version: 1
 
 settings:

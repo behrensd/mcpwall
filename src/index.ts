@@ -12,6 +12,7 @@ import { Logger } from './logger.js';
 import { createProxy } from './proxy.js';
 import { runInit } from './cli/init.js';
 import { runWrap } from './cli/wrap.js';
+import { runCheck } from './cli/check.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -83,9 +84,25 @@ if (dashDashIndex !== -1) {
   program
     .command('init')
     .description('Interactive setup wizard to wrap existing MCP servers')
-    .action(async () => {
+    .option('--profile <name>', 'use a named security profile (local-dev, company-laptop, strict)')
+    .action(async (options) => {
       try {
-        await runInit();
+        await runInit(options.profile);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`[mcpwall] Error: ${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('check')
+    .description('dry-run: test a JSON-RPC message against your rules without running the proxy')
+    .option('--input <json>', 'JSON-RPC message as a string (reads from stdin if not provided)')
+    .action(async (options) => {
+      const globalOptions = program.opts();
+      try {
+        await runCheck(options.input, globalOptions.config);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         process.stderr.write(`[mcpwall] Error: ${message}\n`);

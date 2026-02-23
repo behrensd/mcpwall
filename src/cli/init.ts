@@ -3,16 +3,100 @@
  * Wraps existing MCP server configurations with the firewall
  */
 
-import { readFile, writeFile, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, mkdir, readdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { homedir } from 'node:os';
-import { join } from 'node:path';
+import { join, resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { createInterface } from 'node:readline/promises';
 import { stringify as yamlStringify } from 'yaml';
 import { DEFAULT_CONFIG } from '../config/defaults.js';
 import type { McpServerConfig, McpConfigFile } from '../types.js';
 
-export async function runInit(): Promise<void> {
+/**
+ * Resolve the rules/profiles directory relative to this compiled file.
+ * Same pattern as config/loader.ts loadBuiltinDefaultRules().
+ */
+function getProfilesDir(): string {
+  const thisFile = fileURLToPath(import.meta.url);
+  const packageRoot = dirname(dirname(thisFile)); // up from dist/
+  return join(packageRoot, 'rules', 'profiles');
+}
+
+/**
+ * List available profile names by scanning the profiles directory.
+ */
+async function listAvailableProfiles(): Promise<string[]> {
+  const profilesDir = getProfilesDir();
+  try {
+    const entries = await readdir(profilesDir);
+    return entries
+      .filter((f) => f.endsWith('.yaml'))
+      .map((f) => f.replace(/\.yaml$/, ''));
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Validate a profile name and load its YAML content.
+ * Throws if the profile name is invalid or the file is not found.
+ */
+async function loadProfile(profile: string): Promise<string> {
+  // Strict name validation: lowercase letters, numbers, hyphens only
+  if (!/^[a-z0-9-]+$/.test(profile)) {
+    const available = await listAvailableProfiles();
+    process.stderr.write(`[mcpwall] Invalid profile name "${profile}". Names must be lowercase letters, numbers, and hyphens only.\n`);
+    if (available.length > 0) {
+      process.stderr.write(`  Available profiles: ${available.join(', ')}\n`);
+    }
+    process.exit(1);
+  }
+
+  const profilesDir = getProfilesDir();
+  const profilePath = join(profilesDir, `${profile}.yaml`);
+
+  // Belt-and-suspenders: verify resolved path stays inside profiles dir
+  const resolvedProfiles = resolve(profilesDir);
+  const resolvedProfile = resolve(profilePath);
+  if (!resolvedProfile.startsWith(resolvedProfiles + '/') && resolvedProfile !== resolvedProfiles) {
+    process.stderr.write(`[mcpwall] Invalid profile name "${profile}".\n`);
+    process.exit(1);
+  }
+
+  try {
+    return await readFile(profilePath, 'utf-8');
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      const available = await listAvailableProfiles();
+      const profileList = available.length > 0 ? available.join(', ') : '(none found)';
+      process.stderr.write(`[mcpwall] Unknown profile "${profile}". Available profiles: ${profileList}\n`);
+      process.exit(1);
+    }
+    throw err;
+  }
+}
+
+export async function runInit(profile?: string): Promise<void> {
+  // Validate profile name eagerly before any interactive prompts
+  if (profile) {
+    if (!/^[a-z0-9-]+$/.test(profile)) {
+      const available = await listAvailableProfiles();
+      process.stderr.write(`[mcpwall] Invalid profile name "${profile}". Names must be lowercase letters, numbers, and hyphens only.\n`);
+      if (available.length > 0) {
+        process.stderr.write(`  Available profiles: ${available.join(', ')}\n`);
+      }
+      process.exit(1);
+    }
+    // Check the profile file actually exists before running the wizard
+    const available = await listAvailableProfiles();
+    if (!available.includes(profile)) {
+      const profileList = available.length > 0 ? available.join(', ') : '(none found)';
+      process.stderr.write(`[mcpwall] Unknown profile "${profile}". Available profiles: ${profileList}\n`);
+      process.exit(1);
+    }
+  }
+
   process.stderr.write('\n🔒 mcpwall setup wizard\n\n');
 
   const rl = createInterface({
@@ -122,16 +206,35 @@ export async function runInit(): Promise<void> {
     const firewallConfigDir = join(homedir(), '.mcpwall');
     const firewallConfigPath = join(firewallConfigDir, 'config.yml');
 
-    if (!existsSync(firewallConfigPath)) {
-      process.stderr.write('\nCreating default firewall configuration...\n');
+    if (!existsSync(firewallConfigDir)) {
+      await mkdir(firewallConfigDir, { recursive: true });
+    }
 
-      if (!existsSync(firewallConfigDir)) {
-        await mkdir(firewallConfigDir, { recursive: true });
+    if (profile) {
+      // Load named profile
+      const profileContent = await loadProfile(profile);
+
+      if (existsSync(firewallConfigPath)) {
+        const overwrite = await rl.question(
+          `\n  Config already exists: ${firewallConfigPath}\n  Overwrite with "${profile}" profile? (y/n): `
+        );
+        if (overwrite.trim().toLowerCase() !== 'y') {
+          process.stderr.write('  Keeping existing config.\n');
+        } else {
+          await writeFile(firewallConfigPath, profileContent, 'utf-8');
+          process.stderr.write(`\n  ✓ Applied "${profile}" profile to ${firewallConfigPath}\n`);
+          process.stderr.write(`  Edit ${firewallConfigPath} to customize.\n`);
+        }
+      } else {
+        process.stderr.write(`\nCreating firewall configuration from "${profile}" profile...\n`);
+        await writeFile(firewallConfigPath, profileContent, 'utf-8');
+        process.stderr.write(`  ✓ Created ${firewallConfigPath} using "${profile}" profile\n`);
+        process.stderr.write(`  Edit ${firewallConfigPath} to customize.\n`);
       }
-
+    } else if (!existsSync(firewallConfigPath)) {
+      process.stderr.write('\nCreating default firewall configuration...\n');
       const yamlConfig = yamlStringify(DEFAULT_CONFIG);
       await writeFile(firewallConfigPath, yamlConfig, 'utf-8');
-
       process.stderr.write(`  ✓ Created ${firewallConfigPath}\n`);
     } else {
       process.stderr.write(`\n  ✓ Config already exists: ${firewallConfigPath}\n`);

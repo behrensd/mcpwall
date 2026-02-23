@@ -1,0 +1,70 @@
+# mcpwall recipe for the GitHub MCP server
+# Drop this into your config for @modelcontextprotocol/server-github or similar.
+# Logs all file read operations and blocks broad enumeration of repositories.
+version: 1
+
+settings:
+  log_dir: ~/.mcpwall/logs
+  log_level: info
+  default_action: allow
+
+rules:
+  # Block tools that enumerate private/internal resources broadly
+  - name: block-private-repo-enumeration
+    match:
+      method: tools/call
+      tool: "list_repositories"
+      arguments:
+        _any_value:
+          regex: "(type=private|visibility=private|affiliation=owner)"
+    action: deny
+    message: "Blocked: private repository enumeration"
+
+  # Log all file content reads for audit trail
+  - name: log-file-reads
+    match:
+      method: tools/call
+      tool: "get_file_contents"
+    action: allow
+    message: "GitHub file read (logged)"
+
+  # Log all repository searches for audit trail
+  - name: log-search-code
+    match:
+      method: tools/call
+      tool: "search_code"
+    action: allow
+    message: "GitHub code search (logged)"
+
+  # Block direct secret/token access patterns in arguments
+  - name: block-secret-leakage
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          secrets: true
+    action: deny
+    message: "Blocked: detected secret/API key in GitHub tool arguments"
+
+outbound_rules:
+  - name: redact-secrets-in-responses
+    match:
+      secrets: true
+    action: redact
+    message: "Secret detected in GitHub API response and redacted"
+
+  - name: flag-large-responses
+    match:
+      response_size_exceeds: 102400
+    action: log_only
+    message: "Large GitHub response (>100KB) — check for unexpected data"
+
+secrets:
+  patterns:
+    - name: github-token
+      regex: "(gh[ps]_[A-Za-z0-9_]{36,}|github_pat_[A-Za-z0-9_]{22,})"
+    - name: aws-access-key
+      regex: "AKIA[0-9A-Z]{16}"
+    - name: private-key-header
+      regex: "-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"

@@ -88,7 +88,7 @@ export default function HomePage() {
               <div style={{ background: "#09090b" }}>
                 <img
                   src="/demo.gif"
-                  alt="mcpwall v0.2.0: inbound blocking (SSH keys), outbound secret redaction, and prompt injection denial"
+                  alt="mcpwall v0.3.0: inbound blocking, outbound secret redaction, prompt injection denial, and dry-run policy testing"
                   style={{
                     width: "100%",
                     display: "block",
@@ -494,9 +494,9 @@ export default function HomePage() {
               RESPONSE INSPECTION
             </div>
             <p className="text-zinc-300 font-body leading-relaxed text-[15px] mb-4">
-              v0.2.0 scans both directions. Server responses are inspected
-              before reaching your AI client. Leaked secrets are surgically
-              redacted. Prompt injection patterns are blocked.
+              Bidirectional scanning. Server responses are inspected before
+              reaching your AI client. Leaked secrets are surgically redacted.
+              Prompt injection patterns are blocked.
             </p>
             <div className="mt-2 space-y-2">
               {[
@@ -513,6 +513,40 @@ export default function HomePage() {
                 </div>
               ))}
             </div>
+          </FeatureCard>
+
+          <FeatureCard>
+            <div className="text-brand-400 font-mono text-sm font-normal mb-3 tracking-wide">
+              DRY-RUN POLICY TESTING
+            </div>
+            <p className="text-zinc-300 font-body leading-relaxed text-[15px] mb-4">
+              Test any tool call against your rules before deploying. No proxy,
+              no server, no guessing. Exit 0 means allowed. Exit 1 means denied.
+              Works in CI.
+            </p>
+            <CodeBlock className="text-xs">
+              <div>
+                <span className="text-zinc-500">$ </span>
+                <span className="text-brand-300">mcpwall check</span>
+                <span className="text-zinc-500"> --input</span>
+                <span className="text-amber-300"> &apos;...&apos;</span>
+              </div>
+              <div className="mt-1">
+                <span className="text-green-400">&#10003;</span>
+                <span className="text-zinc-300"> ALLOW</span>
+                <span className="text-zinc-500">  read_file  /tmp/safe.txt</span>
+              </div>
+              <div className="mt-1">
+                <span className="text-red-400">&#215;</span>
+                <span className="text-zinc-300"> DENY</span>
+                <span className="text-zinc-500">   read_file  ~/.ssh/id_rsa</span>
+              </div>
+              <div>
+                <span className="text-zinc-500">
+                  &nbsp; Rule: block-ssh-keys
+                </span>
+              </div>
+            </CodeBlock>
           </FeatureCard>
 
           <FeatureCard>

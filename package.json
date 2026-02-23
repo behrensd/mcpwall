@@ -1,6 +1,6 @@
 {
   "name": "mcpwall",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Deterministic security proxy for MCP tool calls. Blocks dangerous requests, redacts secrets from responses, catches prompt injection. No AI, no cloud, pure rules.",
   "type": "module",
   "bin": {

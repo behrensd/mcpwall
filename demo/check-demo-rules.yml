@@ -1,0 +1,93 @@
+version: 1
+
+settings:
+  log_dir: ~/.mcpwall/logs
+  log_level: info
+  default_action: allow
+
+rules:
+  - name: block-ssh-keys
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(\\.ssh/|id_rsa|id_ed25519|id_ecdsa)"
+    action: deny
+    message: "Blocked: access to SSH keys"
+
+  - name: block-env-files
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "/\\.env($|\\.)"
+    action: deny
+    message: "Blocked: access to .env files"
+
+  - name: block-credentials
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(\\.aws/credentials|\\.npmrc|\\.docker/config\\.json|\\.kube/config|\\.gnupg/)"
+    action: deny
+    message: "Blocked: access to credential files"
+
+  - name: block-destructive-commands
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(rm\\s+-r|rm\\s+-f|rmdir\\s+/|mkfs|dd\\s+if=)"
+    action: deny
+    message: "Blocked: destructive command"
+
+  - name: block-pipe-to-shell
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(curl|wget|fetch).*\\|.*(bash|sh|zsh|python|node)"
+    action: deny
+    message: "Blocked: piping remote content to shell"
+
+  - name: block-reverse-shells
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          regex: "(nc\\s+-[le]|/dev/tcp/|bash\\s+-i\\s+>&|mkfifo|socat)"
+    action: deny
+    message: "Blocked: potential reverse shell"
+
+  - name: block-secret-leakage
+    match:
+      method: tools/call
+      tool: "*"
+      arguments:
+        _any_value:
+          secrets: true
+    action: deny
+    message: "Blocked: detected secret/API key in tool arguments"
+
+outbound_rules:
+  - name: redact-secrets-in-responses
+    match:
+      secrets: true
+    action: redact
+    message: "Secret detected in server response and redacted"
+
+secrets:
+  patterns:
+    - name: aws-access-key
+      regex: "AKIA[0-9A-Z]{16}"
+    - name: github-token
+      regex: "(gh[ps]_[A-Za-z0-9_]{36,}|github_pat_[A-Za-z0-9_]{22,})"
+    - name: private-key-header
+      regex: "-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----"

@@ -1,5 +1,5 @@
 #!/bin/bash
-# mcpwall v0.2.0 demo — shows bidirectional scanning
+# mcpwall v0.3.0 demo — shows bidirectional scanning
 set -e
 
 DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -27,7 +27,7 @@ send() {
 }
 
 echo ""
-echo -e "  ${B}${C}mcpwall${N} v0.2.0 ${D}— iptables for MCP${N}"
+echo -e "  ${B}${C}mcpwall${N} v0.3.0 ${D}— iptables for MCP${N}"
 echo -e "  ${D}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${N}"
 echo ""
 sleep 0.8

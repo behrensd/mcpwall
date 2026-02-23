@@ -1,5 +1,53 @@
 # Changelog
 
+## 0.3.0 (2026-02-28)
+
+### `mcpwall check` — dry-run policy tester
+
+Test any JSON-RPC tool call against your rules without running the proxy:
+
+```bash
+mcpwall check --input '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"read_file","arguments":{"path":"/home/user/.ssh/id_rsa"}}}'
+# ✗ DENY   tools/call  read_file  /home/user/.ssh/id_rsa
+#   Rule: block-ssh-keys
+#   Blocked: access to SSH keys
+```
+
+- Exit code `0` = allowed, `1` = denied/redacted, `2` = input/config error
+- Reads from `--input` flag or stdin (pipe-friendly)
+- Works with both inbound requests and outbound responses
+- ANSI terminal output injection prevented via sanitized display
+
+### Named security profiles
+
+Pick a security baseline when running `mcpwall init`:
+
+```bash
+mcpwall init --profile local-dev       # default rules (same as before)
+mcpwall init --profile company-laptop  # adds GCP, Azure, package manager credential blocks
+mcpwall init --profile strict          # deny-by-default whitelist mode
+```
+
+Profile names are validated before the interactive wizard runs. Path traversal in profile names is blocked.
+
+### Community rule packs
+
+Six new YAML files bundled in the npm package:
+
+- `rules/profiles/local-dev.yaml` — sensible defaults, good starting point
+- `rules/profiles/company-laptop.yaml` — managed machine additions (11 rules)
+- `rules/profiles/strict.yaml` — deny-by-default (21 rules)
+- `rules/servers/filesystem-mcp.yaml` — restricts reads/writes/listings to `${PROJECT_DIR}`
+- `rules/servers/github-mcp.yaml` — logs file reads, blocks private repo enumeration
+- `rules/servers/shell-mcp.yaml` — adds network command + package install blocks
+
+### Stats
+
+- 127 tests (31 new)
+- 52 KB bundle
+
+---
+
 ## 0.2.0 (2026-02-20)
 
 ### Response Inspection (Outbound Scanning)
