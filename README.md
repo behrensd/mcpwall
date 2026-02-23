@@ -14,6 +14,10 @@ Sits between your AI coding tool (Claude Code, Cursor, Windsurf) and MCP servers
   <img src="demo/demo.gif" alt="mcpwall demo — blocking SSH key theft, pipe-to-shell, and secret leakage" width="700">
 </p>
 
+<p align="center">
+  <img src="demo/demo-check.gif" alt="mcpwall check — test any tool call against your rules without running the proxy" width="700">
+</p>
+
 ## Why
 
 MCP servers have full access to your filesystem, shell, databases, and APIs. When an AI agent calls `tools/call`, the server executes whatever the agent asks — reading SSH keys, running `rm -rf`, exfiltrating secrets. There's no built-in policy layer.
@@ -26,6 +30,7 @@ mcpwall adds one. It's a transparent stdio proxy that:
 - **Scans server responses** — redacts leaked secrets, blocks prompt injection patterns, flags suspicious content
 - **Logs everything** — JSON Lines audit trail of every tool call and response
 - **Uses zero AI** — deterministic rules, no LLM decisions, no cloud calls
+- **Test rules without running the proxy** — `mcpwall check` gives instant pass/fail on any tool call
 
 ## Install
 
@@ -77,7 +82,12 @@ That's it. mcpwall now sits in front of all your Docker MCP servers, logging eve
 npx mcpwall init
 ```
 
-This finds your existing MCP servers in Claude Code, Cursor, Windsurf, and VS Code configs and wraps them.
+This finds your existing MCP servers in Claude Code, Cursor, Windsurf, and VS Code configs and wraps them. Optionally pick a security profile:
+
+```bash
+npx mcpwall init --profile company-laptop  # stricter rules for managed machines
+npx mcpwall init --profile strict          # deny-by-default whitelist mode
+```
 
 ### Option 3: Manual wrapping (any MCP server)
 
