@@ -96,13 +96,13 @@ if (dashDashIndex !== -1) {
     });
 
   program
-    .command('check')
-    .description('dry-run: test a JSON-RPC message against your rules without running the proxy')
-    .option('--input <json>', 'JSON-RPC message as a string (reads from stdin if not provided)')
-    .action(async (options) => {
+    .command('check [tool_name] [args...]')
+    .description('test a tool call against your rules (interactive wizard if no args)')
+    .option('--input <json>', 'raw JSON-RPC message (advanced)')
+    .action(async (toolName, toolArgs, options) => {
       const globalOptions = program.opts();
       try {
-        await runCheck(options.input, globalOptions.config);
+        await runCheck(options.input, globalOptions.config, toolName, toolArgs);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         process.stderr.write(`[mcpwall] Error: ${message}\n`);

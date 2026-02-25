@@ -218,3 +218,62 @@ describe('runCheck / policy evaluation logic', () => {
     }
   });
 });
+
+describe('shorthand input: tool name + key=value args', () => {
+  // Mirrors what buildJsonRpcFromShorthand produces
+  function shorthandToMsg(toolName: string, kvArgs: string[]): JsonRpcMessage {
+    const args: Record<string, string> = {};
+    for (const kv of kvArgs) {
+      const eqIndex = kv.indexOf('=');
+      args[kv.slice(0, eqIndex)] = kv.slice(eqIndex + 1);
+    }
+    return {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: { name: toolName, arguments: args },
+    };
+  }
+
+  it('shorthand: read_file path=~/.ssh/id_rsa → DENY', () => {
+    const config = makeConfig();
+    const engine = new PolicyEngine(config);
+    const msg = shorthandToMsg('read_file', ['path=~/.ssh/id_rsa']);
+    const decision = engine.evaluate(msg);
+    expect(decision.action).toBe('deny');
+    expect(decision.rule).toBe('block-ssh-keys');
+  });
+
+  it('shorthand: read_file path=/tmp/test.txt → ALLOW', () => {
+    const config = makeConfig();
+    const engine = new PolicyEngine(config);
+    const msg = shorthandToMsg('read_file', ['path=/tmp/test.txt']);
+    const decision = engine.evaluate(msg);
+    expect(decision.action).toBe('allow');
+  });
+
+  it('shorthand: no arguments → evaluates with empty args', () => {
+    const config = makeConfig();
+    const engine = new PolicyEngine(config);
+    const msg = shorthandToMsg('some_tool', []);
+    const decision = engine.evaluate(msg);
+    expect(decision.action).toBe('allow');
+  });
+
+  it('shorthand: multiple arguments → all included', () => {
+    const config = makeConfig();
+    const engine = new PolicyEngine(config);
+    const msg = shorthandToMsg('write_file', ['path=/home/.ssh/id_rsa', 'content=stolen']);
+    const decision = engine.evaluate(msg);
+    expect(decision.action).toBe('deny');
+  });
+
+  it('shorthand: value containing = sign → split on first = only', () => {
+    const config = makeConfig({ rules: [] });
+    const engine = new PolicyEngine(config);
+    const msg = shorthandToMsg('run', ['cmd=echo a=b']);
+    expect((msg.params as any).arguments.cmd).toBe('echo a=b');
+    const decision = engine.evaluate(msg);
+    expect(decision.action).toBe('allow');
+  });
+});
