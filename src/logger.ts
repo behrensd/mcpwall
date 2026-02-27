@@ -24,6 +24,7 @@ export class Logger {
   private logLevel: number;
   private currentLogFile: string | null = null;
   private writeStream: fs.WriteStream | null = null;
+  private closed = false;
 
   constructor(options: LoggerOptions) {
     this.logDir = this.expandPath(options.logDir);
@@ -51,6 +52,8 @@ export class Logger {
   }
 
   close(): void {
+    if (this.closed) return;
+    this.closed = true;
     if (this.writeStream) {
       this.writeStream.end();
       this.writeStream = null;
@@ -58,6 +61,7 @@ export class Logger {
   }
 
   private writeToFile(entry: LogEntry): void {
+    if (this.closed) return;
     const logFile = this.getLogFilePath();
 
     // Open new file if needed (daily rotation)
@@ -78,7 +82,12 @@ export class Logger {
     if (this.writeStream) {
       this.writeStream.write(line);
     } else {
-      fs.appendFileSync(logFile, line);
+      try {
+        fs.appendFileSync(logFile, line);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`[mcpwall] Log fallback write error: ${message}\n`);
+      }
     }
   }
 
