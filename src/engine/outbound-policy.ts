@@ -4,7 +4,7 @@
  */
 
 import { minimatch } from 'minimatch';
-import type { Config, JsonRpcMessage, OutboundRule, OutboundDecision, OutboundAction } from '../types.js';
+import type { Config, JsonRpcMessage, OutboundRule, OutboundDecision, OutboundAction, McpResult } from '../types.js';
 import { compileSecretPatterns, redactSecrets, type CompiledSecretPattern, type RedactionResult } from './secrets.js';
 
 /** Pre-compiled regex for response_contains_regex patterns */
@@ -146,7 +146,7 @@ export class OutboundPolicyEngine {
       return msg.error.message || JSON.stringify(msg.error);
     }
 
-    const result = msg.result as any;
+    const result = msg.result as McpResult | undefined;
 
     // MCP standard: result.content is an array of content blocks
     if (result && Array.isArray(result.content)) {

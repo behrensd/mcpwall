@@ -9,7 +9,7 @@ import { loadConfig } from '../config/loader.js';
 import { PolicyEngine } from '../engine/policy.js';
 import { OutboundPolicyEngine } from '../engine/outbound-policy.js';
 import { parseJsonRpcLineEx } from '../parser.js';
-import type { JsonRpcMessage, Decision, OutboundDecision } from '../types.js';
+import type { JsonRpcMessage, Decision, OutboundDecision, ToolCallParams } from '../types.js';
 
 const MAX_INPUT_BYTES = 10 * 1024 * 1024; // 10MB
 
@@ -39,10 +39,10 @@ async function readStdin(): Promise<string> {
 
 function printInboundDecision(decision: Decision, msg: JsonRpcMessage): void {
   const method = sanitizeForDisplay(msg.method ?? '(unknown)');
-  const params = msg.params as any;
+  const params = msg.params as ToolCallParams | undefined;
   const toolName = params?.name ? sanitizeForDisplay(params.name) : '';
   const firstArg = params?.arguments
-    ? sanitizeForDisplay(Object.values(params.arguments as Record<string, unknown>)[0] ?? '')
+    ? sanitizeForDisplay(Object.values(params.arguments)[0] ?? '')
     : '';
 
   const contextStr = [method, toolName, firstArg].filter(Boolean).join('  ');

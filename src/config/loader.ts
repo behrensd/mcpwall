@@ -44,16 +44,16 @@ function substituteVariables(value: string): string {
     .replace(/^~\//, join(homedir(), '/'));
 }
 
-function substituteInObject(obj: any): any {
+function substituteInObject(obj: unknown): unknown {
   if (typeof obj === 'string') {
     return substituteVariables(obj);
   }
   if (Array.isArray(obj)) {
     return obj.map(substituteInObject);
   }
-  if (obj && typeof obj === 'object') {
-    const result: any = {};
-    for (const [key, value] of Object.entries(obj)) {
+  if (obj !== null && typeof obj === 'object') {
+    const result: Record<string, unknown> = {};
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
       result[key] = substituteInObject(value);
     }
     return result;
@@ -124,8 +124,7 @@ export async function loadConfig(configPath?: string): Promise<Config> {
     if (!config) {
       throw new Error(`Config file not found: ${resolved}`);
     }
-    const substituted = substituteInObject(config);
-    return substituted;
+    return substituteInObject(config) as Config;
   }
 
   const paths = resolveConfigPaths();
@@ -146,6 +145,5 @@ export async function loadConfig(configPath?: string): Promise<Config> {
     config = await loadBuiltinDefaultRules();
   }
 
-  const substituted = substituteInObject(config);
-  return substituted;
+  return substituteInObject(config) as Config;
 }

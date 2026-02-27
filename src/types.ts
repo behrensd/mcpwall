@@ -121,3 +121,21 @@ export interface RequestContext {
   method?: string;
   ts: number;
 }
+
+/** Typed params for tools/call JSON-RPC requests */
+export interface ToolCallParams {
+  name?: string;
+  arguments?: Record<string, unknown>;
+}
+
+/** MCP standard response content block */
+export interface McpContentBlock {
+  type: string;
+  text?: string;
+}
+
+/** MCP standard result shape */
+export interface McpResult {
+  content?: McpContentBlock[];
+  [key: string]: unknown;
+}

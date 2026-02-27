@@ -4,7 +4,7 @@
  */
 
 import { minimatch } from 'minimatch';
-import type { Config, JsonRpcMessage, Decision, Rule, ArgumentMatcher } from '../types.js';
+import type { Config, JsonRpcMessage, Decision, Rule, ArgumentMatcher, ToolCallParams } from '../types.js';
 import { deepScanObject, compileSecretPatterns, type CompiledSecretPattern } from './secrets.js';
 import { homedir, platform } from 'node:os';
 import { resolve as resolvePath } from 'node:path';
@@ -90,7 +90,7 @@ export class PolicyEngine {
     }
 
     if (msg.method === 'tools/call') {
-      const params = msg.params as any;
+      const params = msg.params as ToolCallParams | undefined;
       if (!params || typeof params !== 'object') {
         return false;
       }
@@ -118,7 +118,7 @@ export class PolicyEngine {
               return false;
             }
           } else {
-            const value = (args as any)[key];
+            const value = (args as Record<string, unknown>)[key];
             if (!this.matchesArgumentValue(value, matcher, compiled)) {
               return false;
             }
@@ -130,7 +130,7 @@ export class PolicyEngine {
     return true;
   }
 
-  private matchesAnyValue(args: any, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
+  private matchesAnyValue(args: Record<string, unknown>, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
     if (matcher.secrets) {
       return deepScanObject(args, this.compiledSecrets) !== null;
     }
@@ -139,7 +139,7 @@ export class PolicyEngine {
     return this.deepMatchAny(args, matcher, compiled);
   }
 
-  private deepMatchAny(obj: any, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
+  private deepMatchAny(obj: unknown, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
     if (obj === null || obj === undefined) return false;
 
     if (typeof obj === 'string' || typeof obj === 'number' || typeof obj === 'boolean') {
@@ -163,7 +163,7 @@ export class PolicyEngine {
     return false;
   }
 
-  private matchesArgumentValue(value: any, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
+  private matchesArgumentValue(value: unknown, matcher: ArgumentMatcher, compiled?: CompiledMatcher): boolean {
     const strValue = typeof value === 'string' ? value : JSON.stringify(value);
 
     if (matcher.pattern) {
