@@ -566,6 +566,100 @@ describe('PolicyEngine', () => {
   });
 });
 
+describe('typed params — ToolCallParams interface coverage', () => {
+  it('tools/call with typed name and arguments fields evaluated correctly', () => {
+    const config: Config = {
+      version: 1,
+      settings: { log_dir: '/tmp', log_level: 'debug', default_action: 'allow' },
+      rules: [
+        {
+          name: 'block-write-to-etc',
+          match: {
+            method: 'tools/call',
+            tool: 'write_file',
+            arguments: { path: { regex: '^/etc/' } }
+          },
+          action: 'deny',
+          message: 'Write to /etc denied'
+        }
+      ]
+    };
+    const engine = new PolicyEngine(config);
+
+    // msg.params typed as ToolCallParams — no as any needed in engine
+    const msg: JsonRpcMessage = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: { name: 'write_file', arguments: { path: '/etc/crontab', content: 'evil' } }
+    };
+
+    const decision = engine.evaluate(msg);
+    expect(decision.action).toBe('deny');
+    expect(decision.rule).toBe('block-write-to-etc');
+  });
+
+  it('tools/call params with unknown extra fields — still evaluates correctly', () => {
+    const config: Config = {
+      version: 1,
+      settings: { log_dir: '/tmp', log_level: 'debug', default_action: 'allow' },
+      rules: [
+        {
+          name: 'allow-known-tool',
+          match: { method: 'tools/call', tool: 'known_tool' },
+          action: 'allow'
+        }
+      ]
+    };
+    const engine = new PolicyEngine(config);
+    const msg: JsonRpcMessage = {
+      jsonrpc: '2.0',
+      id: 2,
+      method: 'tools/call',
+      params: { name: 'known_tool', arguments: {}, extra: 'ignored' }
+    };
+    const decision = engine.evaluate(msg);
+    expect(decision.action).toBe('allow');
+  });
+});
+
+describe('config path normalization — substituteVariables collapses traversal sequences', () => {
+  it('not_under: path with ../ segments is resolved and correctly blocked', () => {
+    // This mirrors the existing traversal test but verifies the ../ is collapsed
+    // by resolvePath in normalizePath (policy.ts) — the security boundary
+    const config: Config = {
+      version: 1,
+      settings: { log_dir: '/tmp', log_level: 'debug', default_action: 'allow' },
+      rules: [
+        {
+          name: 'block-outside-project',
+          match: {
+            method: 'tools/call',
+            tool: '*',
+            arguments: { path: { not_under: '${PROJECT_DIR}' } }
+          },
+          action: 'deny',
+          message: 'Path traversal blocked'
+        }
+      ]
+    };
+    const engine = new PolicyEngine(config);
+    const projectDir = process.cwd();
+
+    // Path using ../ to escape project dir — must be blocked
+    const traversalMsg: JsonRpcMessage = {
+      jsonrpc: '2.0',
+      id: 1,
+      method: 'tools/call',
+      params: {
+        name: 'read_file',
+        arguments: { path: `${projectDir}/subdir/../../etc/passwd` }
+      }
+    };
+    expect(engine.evaluate(traversalMsg).action).toBe('deny');
+  });
+});
+
 describe('ReDoS protection', () => {
   const baseConfig = {
     version: 1,
