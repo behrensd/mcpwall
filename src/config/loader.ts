@@ -38,10 +38,17 @@ async function loadConfigFile(path: string): Promise<Config | null> {
 }
 
 function substituteVariables(value: string): string {
-  return value
+  const substituted = value
     .replace(/\$\{HOME\}/g, homedir())
     .replace(/\$\{PROJECT_DIR\}/g, process.cwd())
     .replace(/^~\//, join(homedir(), '/'));
+
+  // Normalize paths that start with / to collapse any ../ traversal sequences
+  // e.g. ${HOME}/../../../etc/passwd → /etc/passwd (correct resolved path, not a bypass)
+  if (substituted.startsWith('/')) {
+    return resolve(substituted);
+  }
+  return substituted;
 }
 
 function substituteInObject(obj: unknown): unknown {

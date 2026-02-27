@@ -41,6 +41,10 @@ export function createProxy(options: ProxyOptions): ChildProcess {
         method: msg.method,
         ts: Date.now(),
       });
+    } else if ((msg.id === undefined || msg.id === null) && msg.method === 'tools/call') {
+      process.stderr.write(
+        `[mcpwall] Warning: tools/call with null/undefined id — response cannot be correlated for outbound inspection\n`
+      );
     }
   }
 
