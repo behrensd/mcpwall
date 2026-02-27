@@ -6,9 +6,11 @@
 
 Last activity: 2026-02-27 - Completed quick task 1: audit and fix critical codebase issues
 
-### Completed Quick Tasks
+### Quick Tasks Completed
 
-- **quick-1** (2026-02-27): Logger close() idempotency, streaming size enforcement, as-any removal with proper types, null-ID warning, config path normalization — 143 tests passing
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | Audit and fix critical mcpwall codebase issues from CONCERNS.md | 2026-02-27 | f3b1d64 | [1-audit-and-fix-critical-mcpwall-codebase-](./quick/1-audit-and-fix-critical-mcpwall-codebase-/) |
 
 ### Decisions
 
