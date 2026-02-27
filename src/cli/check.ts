@@ -21,10 +21,18 @@ function sanitizeForDisplay(value: unknown): string {
 
 async function readStdin(): Promise<string> {
   return new Promise((resolve, reject) => {
-    let data = '';
-    process.stdin.setEncoding('utf-8');
-    process.stdin.on('data', (chunk) => { data += chunk; });
-    process.stdin.on('end', () => resolve(data));
+    const chunks: Buffer[] = [];
+    let totalBytes = 0;
+    process.stdin.on('data', (chunk: Buffer) => {
+      totalBytes += chunk.byteLength;
+      if (totalBytes > MAX_INPUT_BYTES) {
+        reject(new Error('input exceeds 10MB limit'));
+        process.stdin.destroy();
+        return;
+      }
+      chunks.push(chunk);
+    });
+    process.stdin.on('end', () => resolve(Buffer.concat(chunks).toString('utf-8')));
     process.stdin.on('error', reject);
   });
 }
