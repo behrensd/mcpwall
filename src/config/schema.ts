@@ -36,10 +36,10 @@ const validRegex = z.string().refine(
   (val) => {
     try { new RegExp(val); return true; } catch { return false; }
   },
-  (val) => ({ message: `Invalid regex: "${val}"` })
+  { error: (iss) => `Invalid regex: "${iss.input}"` }
 ).refine(
   (val) => !hasReDoSRisk(val),
-  (val) => ({ message: `Potentially unsafe regex (ReDoS risk): "${val}" — avoid nested quantifiers like (a+)+` })
+  { error: (iss) => `Potentially unsafe regex (ReDoS risk): "${iss.input}" — avoid nested quantifiers like (a+)+` }
 );
 
 export const secretPatternSchema = z.object({
