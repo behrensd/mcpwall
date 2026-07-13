@@ -20,7 +20,7 @@ export interface Rule {
     tool?: string;
     arguments?: Record<string, ArgumentMatcher>;
   };
-  action: 'allow' | 'deny' | 'ask';
+  action: 'allow' | 'deny';
   message?: string;
 }
 
@@ -32,7 +32,7 @@ export interface ArgumentMatcher {
 }
 
 export interface Decision {
-  action: 'allow' | 'deny' | 'ask';
+  action: 'allow' | 'deny';
   rule: string | null;
   message?: string;
 }
@@ -42,7 +42,7 @@ export interface Config {
   settings: {
     log_dir: string;
     log_level: 'debug' | 'info' | 'warn' | 'error';
-    default_action: 'allow' | 'deny' | 'ask';
+    default_action: 'allow' | 'deny';
     log_args?: 'full' | 'none';
     outbound_default_action?: OutboundAction;
     log_redacted?: 'none' | 'hash' | 'full';

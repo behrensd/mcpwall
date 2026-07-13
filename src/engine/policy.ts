@@ -27,12 +27,6 @@ export class PolicyEngine {
   constructor(config: Config) {
     this.config = config;
 
-    // Warn about ask rules — not interactive in Phase 1
-    const askRules = config.rules.filter(r => r.action === 'ask');
-    if (askRules.length > 0) {
-      process.stderr.write(`[mcpwall] Warning: ${askRules.length} rule(s) use action "ask" which is not yet interactive — these will ALLOW traffic (logged). Rules: ${askRules.map(r => r.name).join(', ')}\n`);
-    }
-
     this.compiledSecrets = compileSecretPatterns(config.secrets?.patterns || []);
 
     for (let i = 0; i < config.rules.length; i++) {
@@ -51,7 +45,7 @@ export class PolicyEngine {
 
   /**
    * Evaluate a JSON-RPC message against all rules
-   * Returns the action to take (allow/deny/ask) and the matched rule
+   * Returns an allow or deny decision and the matched rule
    */
   evaluate(msg: JsonRpcMessage): Decision {
     if (!msg.method) {

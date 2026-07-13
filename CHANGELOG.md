@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Breaking changes
+
+- Remove the non-interactive ask action. Configurations using ask now fail validation and must use allow or deny.
+
 ### Hardening
 
 - Add opt-in `--strict` proxy mode to reject malformed JSON-RPC lines instead of forwarding them raw.

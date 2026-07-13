@@ -5,6 +5,7 @@
 ## Known Limitations (By Design)
 
 **Ask Action Not Interactive:**
+- **Resolved status (2026-07-13, v0.4.0 hardening):** This historical finding is resolved. Tasks 1 and 2 removed `ask` from active configuration and runtime handling; inbound actions now accept only `allow` or `deny`, and interactive approval is unsupported. The original analysis below is retained as audit evidence of the pre-hardening behavior.
 - Issue: The `ask` action is defined in the schema and config but not implemented. Rules using `action: 'ask'` silently behave as `allow` with a warning emitted at startup.
 - Files: `src/engine/policy.ts` (lines 30-34), `src/proxy.ts` (line 95), `src/config/schema.ts` (line 65)
 - Impact: Users may configure rules expecting interactive prompts, but traffic is allowed without user intervention. The warning is printed to stderr only at startup, so it's easily missed if not monitoring logs.

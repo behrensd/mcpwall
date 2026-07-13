@@ -57,7 +57,7 @@
 3. `parseJsonRpcLineEx()` parses as single or batch message
 4. `PolicyEngine.evaluate()` matches rules top-to-bottom (first match wins)
 5. If `deny`: build error response, write to stdout, log
-6. If `allow` or `ask`: track request context (id → tool name), forward to child stdin
+6. If `allow`: track request context (id → tool name), forward to child stdin
 7. Child process (MCP server) receives forwarded message
 
 **Outbound Path (MCP Server → Firewall → Claude):**
@@ -134,7 +134,7 @@
 **Logging:**
 - Dual output: stderr (human) + daily JSONL files (machine-readable)
 - Levels: debug < info < warn < error
-- Action mapping: deny/redact → warn, allow/ask/log_only → info
+- Action mapping: deny/redact → warn, allow/log_only → info
 
 **Validation:**
 - Config: Zod schemas with regex validation, ReDoS detection

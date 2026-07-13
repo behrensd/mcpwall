@@ -2,7 +2,7 @@
 
 ## Current Milestone: v0.4.0 — Hardening & Quality
 
-Status: in progress.
+Status: in progress; Task 4 root-package verification is complete: `npx tsc --noEmit`, root `npm run build`, `npm test` (167 tests), and `git diff --check` passed. `npm --prefix site run build` remains inconclusive/unverified after a prior no-output hang and SIGINT, so full verification is not completely clean.
 
 ### Completed
 - Typecheck cleanup for Zod v4 config validation.
@@ -13,9 +13,9 @@ Status: in progress.
 - `mcpwall explain-policy` for inspecting merged policy behavior.
 - Opt-in per-tool rate limiting via `settings.rate_limit`.
 - Opt-in `--strict` mode for rejecting malformed JSON-RPC lines.
+- Removed the non-interactive `ask` action because it silently allowed traffic.
 
 ### Remaining Design Calls
-- Decide whether `action: ask` should become a real interactive flow or be removed from the active schema until it is ready.
 - Decide whether default secret entropy thresholds should be lowered or paired with more fixed low-entropy token patterns.
 - Decide whether the current ReDoS validation is sufficient for user-provided regexes.
 

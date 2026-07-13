@@ -55,6 +55,10 @@ export const argumentMatcherSchema = z.object({
   secrets: z.boolean().optional()
 });
 
+const inboundActionSchema = z.enum(['allow', 'deny'], {
+  error: 'Action must be "allow" or "deny". "ask" is not supported; replace it with "allow" or "deny".',
+});
+
 export const ruleSchema = z.object({
   name: z.string(),
   match: z.object({
@@ -62,7 +66,7 @@ export const ruleSchema = z.object({
     tool: z.string().optional(),
     arguments: z.record(z.string(), argumentMatcherSchema).optional()
   }),
-  action: z.enum(['allow', 'deny', 'ask']),
+  action: inboundActionSchema,
   message: z.string().optional(),
 });
 
@@ -90,7 +94,7 @@ export const configSchema = z.object({
   settings: z.object({
     log_dir: z.string(),
     log_level: z.enum(['debug', 'info', 'warn', 'error']),
-    default_action: z.enum(['allow', 'deny', 'ask']),
+    default_action: inboundActionSchema,
     log_args: z.enum(['full', 'none']).optional(),
     outbound_default_action: z.enum(['allow', 'deny', 'redact', 'log_only']).optional(),
     log_redacted: z.enum(['none', 'hash', 'full']).optional(),

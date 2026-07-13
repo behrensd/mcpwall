@@ -172,7 +172,7 @@ version: 1
 settings:
   log_dir: ~/.mcpwall/logs
   log_level: info         # debug | info | warn | error
-  default_action: allow   # allow | deny | ask
+  default_action: allow   # allow | deny
   rate_limit:             # optional, disabled unless set
     max_calls: 100        # per tool, per window
     window_seconds: 60
@@ -233,6 +233,8 @@ secrets:
       regex: "[A-Za-z0-9/+=]{40}"
       entropy_threshold: 4.5
 ```
+
+mcpwall does not support an interactive ask action; choose allow or deny explicitly.
 
 ### Rule matchers
 

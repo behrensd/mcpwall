@@ -54,19 +54,13 @@ function printInboundDecision(decision: Decision, msg: JsonRpcMessage): void {
     } else {
       process.stdout.write(`  No rule matched — default action: allow\n`);
     }
-  } else if (decision.action === 'deny') {
+  } else {
     process.stdout.write(`\u2717 DENY   ${contextStr}\n`);
     if (decision.rule) {
       process.stdout.write(`  Rule: ${sanitizeForDisplay(decision.rule)}\n`);
     }
     if (decision.message) {
       process.stdout.write(`  ${sanitizeForDisplay(decision.message)}\n`);
-    }
-  } else {
-    // ask — treated as allow for display
-    process.stdout.write(`? ASK    ${contextStr}\n`);
-    if (decision.rule) {
-      process.stdout.write(`  Rule: ${sanitizeForDisplay(decision.rule)}\n`);
     }
   }
 }

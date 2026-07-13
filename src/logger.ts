@@ -117,7 +117,6 @@ export class Logger {
       case 'deny':
       case 'redact':
         return 'warn';
-      case 'ask':
       case 'allow':
       case 'log_only':
         return 'info';
@@ -134,8 +133,6 @@ export class Logger {
         return c('32', 'ALLOW');    // green
       case 'deny':
         return c('31', 'DENY');     // red
-      case 'ask':
-        return c('33', 'ASK');      // yellow
       case 'redact':
         return c('36', 'REDACT');   // cyan
       case 'log_only':

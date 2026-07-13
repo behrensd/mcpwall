@@ -719,4 +719,29 @@ describe('ReDoS protection', () => {
     const result = configSchema.safeParse(config);
     expect(result.success).toBe(false);
   });
+
+});
+
+describe('inbound action validation', () => {
+  it('rejects ask actions with migration guidance', () => {
+    const ruleResult = configSchema.safeParse({
+      version: 1,
+      settings: { log_dir: '/tmp', log_level: 'info', default_action: 'allow' },
+      rules: [{ name: 'review-write', match: { method: 'tools/call' }, action: 'ask' }],
+    });
+    const defaultResult = configSchema.safeParse({
+      version: 1,
+      settings: { log_dir: '/tmp', log_level: 'info', default_action: 'ask' },
+      rules: [],
+    });
+
+    expect(ruleResult.success).toBe(false);
+    expect(defaultResult.success).toBe(false);
+    if (!ruleResult.success) {
+      expect(ruleResult.error.issues[0]?.message).toContain('replace it with "allow" or "deny"');
+    }
+    if (!defaultResult.success) {
+      expect(defaultResult.error.issues[0]?.message).toContain('replace it with "allow" or "deny"');
+    }
+  });
 });

@@ -115,8 +115,9 @@ export default function ThreatModelPage() {
                   </p>
                   <p>
                     Rules are YAML, evaluated top-to-bottom, first match wins.
-                    Actions are <code>allow</code>, <code>deny</code>, or{" "}
-                    <code>ask</code>. No AI, no cloud, no network calls.
+                    Actions are <code>allow</code> or <code>deny</code>.
+                    Interactive approval is unsupported. No AI, no cloud, no
+                    network calls.
                     Deterministic: same input + same rules = same output.
                   </p>
                 </div>

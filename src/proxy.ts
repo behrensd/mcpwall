@@ -147,7 +147,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
       return false;
     }
 
-    // Allow or ask (ask = allow in Phase 1)
+    // Allowed traffic is logged before forwarding.
     // Only log full args when explicitly configured
     const loggedArgs = logArgs === 'full' && msg.method === 'tools/call'
       ? (msg.params as { arguments?: unknown })?.arguments

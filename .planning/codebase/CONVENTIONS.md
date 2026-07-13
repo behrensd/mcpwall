@@ -2,6 +2,8 @@
 
 **Analysis Date:** 2026-02-27
 
+> **Resolved status (2026-07-13, v0.4.0 hardening):** References to `ask` below document the codebase as analyzed on 2026-02-27. Tasks 1 and 2 subsequently removed `ask` from active inbound configuration and runtime handling; only `allow` and `deny` are supported, and interactive approval is unsupported. The historical observations remain for audit context.
+
 ## Naming Patterns
 
 **Files:**
@@ -140,7 +142,7 @@ log(entry: LogEntry): void {
 - Complex algorithms: ReDoS detection pattern in `config/schema.ts`
 - Security-critical sections: path traversal validation in `cli/init.ts`
 - Non-obvious behavior: request-response correlation in `proxy.ts`
-- Warnings about phase limitations: "ask rules not interactive in Phase 1"
+- Historical pre-v0.4.0 warning: "ask rules not interactive in Phase 1" (removed by v0.4.0 hardening)
 
 **JSDoc/TSDoc:**
 - Functions documented with JSDoc blocks: `/***/` above function

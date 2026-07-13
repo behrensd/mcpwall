@@ -11,6 +11,7 @@ _Drafted 2026-07-13. Source: `.planning/codebase/CONCERNS.md` (2026-02-27), minu
 - `src/cli/explain.ts` — add `mcpwall explain-policy`
 - `src/engine/rate-limiter.ts` + proxy wiring — add opt-in per-tool rate limiting
 - `src/proxy.ts` + CLI wiring — add opt-in `--strict` malformed JSON-RPC rejection
+- `src/config/schema.ts`, runtime types, policy engine, proxy, CLI, and logger — remove the non-interactive `ask` action because it silently allowed traffic
 
 ---
 
@@ -42,7 +43,6 @@ _Drafted 2026-07-13. Source: `.planning/codebase/CONCERNS.md` (2026-02-27), minu
 - Token bucket per tool/server. SECURITY.md already promises it. Bigger: config schema + engine + tests.
 
 ### Tier 3 — design decisions (need Dom, not just code)
-- **`ask` action** silently behaves as `allow` — implement interactive prompt, or remove from schema + document as Phase-2.
 - **Entropy thresholds** may miss low-entropy secrets — pair fixed patterns with entropy, or lower defaults.
 - **ReDoS validation** — partially covered now (schema.ts rejects nested quantifiers via `hasReDoSRisk`); decide if that's sufficient.
 
