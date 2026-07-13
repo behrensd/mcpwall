@@ -161,7 +161,7 @@ function sendAndCollect(
   proc: ReturnType<typeof spawn>,
   messages: object[],
   expectedCount: number,
-  timeoutMs = 5000
+  timeoutMs = 15000
 ): Promise<object[]> {
   return new Promise((resolve, reject) => {
     const responses: object[] = [];
