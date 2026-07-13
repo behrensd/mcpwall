@@ -23,6 +23,18 @@ export interface ProxyOptions {
 }
 
 /**
+ * Evict the oldest entry from a request-correlation map when it has reached
+ * `maxSize`, making room for a new insertion. Map preserves insertion order, so
+ * the first key is the oldest. Bounds memory when responses never arrive.
+ */
+export function evictOldestIfFull<K, V>(map: Map<K, V>, maxSize: number): void {
+  if (map.size >= maxSize) {
+    const oldest = map.keys().next().value;
+    if (oldest !== undefined) map.delete(oldest);
+  }
+}
+
+/**
  * Create and start the transparent stdio proxy
  * Returns the child process for lifecycle management
  */
@@ -32,10 +44,15 @@ export function createProxy(options: ProxyOptions): ChildProcess {
   // Request-response correlation: maps JSON-RPC id to request context
   const pendingRequests = new Map<string | number, RequestContext>();
   const REQUEST_TTL_MS = 60_000;
+  // Bound the map so responses that never arrive (crashed server, dropped
+  // notifications) can't accumulate into a slow memory leak. Map preserves
+  // insertion order, so the first key is the oldest entry.
+  const MAX_PENDING = 10_000;
 
   function trackRequest(msg: JsonRpcMessage): void {
     if (msg.id !== undefined && msg.id !== null && msg.method === 'tools/call') {
       const params = msg.params as { name?: string } | undefined;
+      evictOldestIfFull(pendingRequests, MAX_PENDING);
       pendingRequests.set(msg.id, {
         tool: params?.name,
         method: msg.method,
