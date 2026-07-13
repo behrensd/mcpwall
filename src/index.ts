@@ -8,6 +8,7 @@ import { createRequire } from 'node:module';
 import { loadConfig } from './config/loader.js';
 import { PolicyEngine } from './engine/policy.js';
 import { OutboundPolicyEngine } from './engine/outbound-policy.js';
+import { RateLimiter } from './engine/rate-limiter.js';
 import { Logger } from './logger.js';
 import { createProxy } from './proxy.js';
 import { runInit } from './cli/init.js';
@@ -56,6 +57,9 @@ if (dashDashIndex !== -1) {
       const outboundPolicyEngine = config.outbound_rules?.length
         ? new OutboundPolicyEngine(config)
         : undefined;
+      const rateLimiter = config.settings.rate_limit
+        ? new RateLimiter(config.settings.rate_limit)
+        : undefined;
       const logger = new Logger({
         logDir: config.settings.log_dir,
         logLevel: config.settings.log_level
@@ -69,6 +73,7 @@ if (dashDashIndex !== -1) {
         logArgs: config.settings.log_args,
         outboundPolicyEngine,
         logRedacted: config.settings.log_redacted,
+        rateLimiter,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);

@@ -64,6 +64,7 @@ export function formatPolicy(config: Config): string {
   out.push(`  log_level:               ${s.log_level}`);
   out.push(`  log_args:                ${s.log_args ?? 'none'}`);
   out.push(`  log_redacted:            ${s.log_redacted ?? 'none'}`);
+  out.push(`  rate_limit:              ${s.rate_limit ? `${s.rate_limit.max_calls} calls / ${s.rate_limit.window_seconds}s per tool` : '(disabled)'}`);
   out.push('');
 
   out.push(`Inbound rules (${config.rules.length}, first match wins, top to bottom):`);

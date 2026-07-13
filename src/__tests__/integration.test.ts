@@ -116,6 +116,23 @@ secrets:
 
 const testConfigPath = join(projectRoot, '.test-firewall-config.yml');
 
+// Config with a tight rate limit to test the token-bucket cutoff
+const TEST_RATE_LIMIT_CONFIG = `
+version: 1
+settings:
+  log_dir: /tmp/mcpwall-test-logs
+  log_level: debug
+  default_action: allow
+  rate_limit:
+    max_calls: 2
+    window_seconds: 60
+rules: []
+secrets:
+  patterns: []
+`;
+
+const testRateLimitConfigPath = join(projectRoot, '.test-rate-limit-config.yml');
+
 // Config with outbound rules for response inspection tests
 const TEST_OUTBOUND_CONFIG = `
 version: 1
@@ -212,6 +229,7 @@ describe('Integration: proxy end-to-end', () => {
     await writeFile(echoServerPath, ECHO_SERVER_SCRIPT, 'utf-8');
     await writeFile(testConfigPath, TEST_CONFIG, 'utf-8');
     await writeFile(testOutboundConfigPath, TEST_OUTBOUND_CONFIG, 'utf-8');
+    await writeFile(testRateLimitConfigPath, TEST_RATE_LIMIT_CONFIG, 'utf-8');
     await mkdir('/tmp/mcpwall-test-logs', { recursive: true });
 
     return async () => {
@@ -219,6 +237,7 @@ describe('Integration: proxy end-to-end', () => {
       await unlink(echoServerPath).catch(() => {});
       await unlink(testConfigPath).catch(() => {});
       await unlink(testOutboundConfigPath).catch(() => {});
+      await unlink(testRateLimitConfigPath).catch(() => {});
     };
   });
 
@@ -482,6 +501,39 @@ describe('Integration: proxy end-to-end', () => {
       expect(r2.result).toBeDefined();
       expect(r2.result.content[0].text).toContain('[REDACTED BY MCPWALL]');
       expect(r2.result.content[0].text).not.toContain('AKIA');
+    } finally {
+      proc.kill();
+    }
+  });
+
+  it('rate-limits tool calls beyond max_calls and allows other tools through', async () => {
+    const proc = spawn('node', [distEntry, '-c', testRateLimitConfigPath, '--', 'node', echoServerPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env },
+    });
+
+    try {
+      // max_calls: 2 for read_file — 3rd call in the same window must be denied.
+      // A call to a different tool (write_file) should be unaffected (separate bucket).
+      const responses = await sendAndCollect(proc, [
+        { jsonrpc: '2.0', id: 1, method: 'tools/call', params: { name: 'read_file', arguments: { path: '/tmp/a.txt' } } },
+        { jsonrpc: '2.0', id: 2, method: 'tools/call', params: { name: 'read_file', arguments: { path: '/tmp/b.txt' } } },
+        { jsonrpc: '2.0', id: 3, method: 'tools/call', params: { name: 'read_file', arguments: { path: '/tmp/c.txt' } } },
+        { jsonrpc: '2.0', id: 4, method: 'tools/call', params: { name: 'write_file', arguments: { path: '/tmp/d.txt' } } },
+      ], 4);
+
+      expect(responses).toHaveLength(4);
+      const byId = (id: number) => responses.find((r: any) => r.id === id) as any;
+
+      expect(byId(1).result).toBeDefined();
+      expect(byId(2).result).toBeDefined();
+
+      expect(byId(3).error).toBeDefined();
+      expect(byId(3).error.message).toContain('Rate limit exceeded');
+      expect(byId(3).error.message).toContain('read_file');
+
+      // Different tool, own bucket — not rate-limited
+      expect(byId(4).result).toBeDefined();
     } finally {
       proc.kill();
     }

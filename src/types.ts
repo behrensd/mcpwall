@@ -46,6 +46,10 @@ export interface Config {
     log_args?: 'full' | 'none';
     outbound_default_action?: OutboundAction;
     log_redacted?: 'none' | 'hash' | 'full';
+    rate_limit?: {
+      max_calls: number;
+      window_seconds: number;
+    };
   };
   rules: Rule[];
   outbound_rules?: OutboundRule[];

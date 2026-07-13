@@ -173,6 +173,9 @@ settings:
   log_dir: ~/.mcpwall/logs
   log_level: info         # debug | info | warn | error
   default_action: allow   # allow | deny | ask
+  rate_limit:             # optional, disabled unless set
+    max_calls: 100        # per tool, per window
+    window_seconds: 60
 
 rules:
   # Block reading SSH keys

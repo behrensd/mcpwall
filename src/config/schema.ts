@@ -94,6 +94,10 @@ export const configSchema = z.object({
     log_args: z.enum(['full', 'none']).optional(),
     outbound_default_action: z.enum(['allow', 'deny', 'redact', 'log_only']).optional(),
     log_redacted: z.enum(['none', 'hash', 'full']).optional(),
+    rate_limit: z.object({
+      max_calls: z.number().positive(),
+      window_seconds: z.number().positive(),
+    }).optional(),
   }),
   rules: z.array(ruleSchema),
   outbound_rules: z.array(outboundRuleSchema).optional(),

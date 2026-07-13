@@ -38,4 +38,4 @@ The following are in scope for security reports:
 - Vulnerabilities in upstream MCP servers (report to the server maintainer)
 - Vulnerabilities in Claude Code, Cursor, or other MCP clients
 - Social engineering attacks
-- Denial of service through legitimate but excessive tool calls (rate limiting is a planned feature)
+- Denial of service through legitimate but excessive tool calls — mitigate with `settings.rate_limit` (per-tool token bucket, opt-in, disabled by default)

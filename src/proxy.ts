@@ -8,6 +8,7 @@ import type { JsonRpcMessage, Decision, OutboundDecision, RequestContext } from 
 import { parseJsonRpcLineEx, createLineBuffer } from './parser.js';
 import type { Logger } from './logger.js';
 import type { OutboundPolicyEngine } from './engine/outbound-policy.js';
+import type { RateLimiter } from './engine/rate-limiter.js';
 
 export interface ProxyOptions {
   command: string;
@@ -20,6 +21,15 @@ export interface ProxyOptions {
   outboundPolicyEngine?: OutboundPolicyEngine;
   logRedacted?: 'none' | 'hash' | 'full';
   serverName?: string;
+  rateLimiter?: RateLimiter;
+}
+
+/** Extract the tool name from a tools/call request, if present. */
+function getToolName(msg: JsonRpcMessage): string | undefined {
+  if (msg.method === 'tools/call' && msg.params && typeof msg.params === 'object') {
+    return (msg.params as { name?: string }).name;
+  }
+  return undefined;
 }
 
 /**
@@ -39,7 +49,22 @@ export function evictOldestIfFull<K, V>(map: Map<K, V>, maxSize: number): void {
  * Returns the child process for lifecycle management
  */
 export function createProxy(options: ProxyOptions): ChildProcess {
-  const { command, args, policyEngine, logger, logArgs = 'none', outboundPolicyEngine, logRedacted = 'none', serverName } = options;
+  const { command, args, policyEngine, logger, logArgs = 'none', outboundPolicyEngine, logRedacted = 'none', serverName, rateLimiter } = options;
+
+  /** Rate-limit tools/call requests. Returns a synthetic deny Decision if the
+   * tool's bucket is exhausted, otherwise undefined (not our concern). */
+  function checkRateLimit(msg: JsonRpcMessage): Decision | undefined {
+    if (!rateLimiter || msg.method !== 'tools/call') return undefined;
+    const toolName = getToolName(msg) ?? '__unknown__';
+    if (!rateLimiter.tryConsume(toolName)) {
+      return {
+        action: 'deny',
+        rule: 'rate_limit',
+        message: `Rate limit exceeded for tool "${toolName}"`,
+      };
+    }
+    return undefined;
+  }
 
   // Request-response correlation: maps JSON-RPC id to request context
   const pendingRequests = new Map<string | number, RequestContext>();
@@ -94,10 +119,7 @@ export function createProxy(options: ProxyOptions): ChildProcess {
   });
 
   function evaluateMessage(msg: JsonRpcMessage, decision: Decision): boolean {
-    let toolName: string | undefined;
-    if (msg.method === 'tools/call' && msg.params && typeof msg.params === 'object') {
-      toolName = (msg.params as { name?: string }).name;
-    }
+    const toolName = getToolName(msg);
 
     if (decision.action === 'deny') {
       // Redact args to avoid leaking secrets into logs
@@ -156,7 +178,10 @@ export function createProxy(options: ProxyOptions): ChildProcess {
 
       if (result.type === 'single') {
         const msg = result.message;
-        const decision = policyEngine.evaluate(msg);
+        let decision = policyEngine.evaluate(msg);
+        if (decision.action !== 'deny') {
+          decision = checkRateLimit(msg) ?? decision;
+        }
 
         if (decision.action === 'deny') {
           if (msg.id !== undefined && msg.id !== null) {
@@ -180,7 +205,10 @@ export function createProxy(options: ProxyOptions): ChildProcess {
         const errors: object[] = [];
 
         for (const msg of result.messages) {
-          const decision = policyEngine.evaluate(msg);
+          let decision = policyEngine.evaluate(msg);
+          if (decision.action !== 'deny') {
+            decision = checkRateLimit(msg) ?? decision;
+          }
 
           if (decision.action === 'deny') {
             evaluateMessage(msg, decision);
