@@ -33,6 +33,7 @@ if (dashDashIndex !== -1) {
     .version(version)
     .option('-c, --config <path>', 'Path to config file')
     .option('--log-level <level>', 'Log level', 'info')
+    .option('--strict', 'Reject malformed JSON-RPC lines instead of forwarding them raw')
     .parse(optionsArgs);
 
   const options = program.opts();
@@ -74,6 +75,7 @@ if (dashDashIndex !== -1) {
         outboundPolicyEngine,
         logRedacted: config.settings.log_redacted,
         rateLimiter,
+        strictJsonRpc: options.strict === true,
       });
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
@@ -146,6 +148,7 @@ if (dashDashIndex !== -1) {
   program
     .option('-c, --config <path>', 'Path to config file')
     .option('--log-level <level>', 'Log level', 'info')
+    .option('--strict', 'Reject malformed JSON-RPC lines instead of forwarding them raw')
     .argument('[command...]', 'MCP server command to proxy (use -- before command)')
     .action(() => {
       program.help();

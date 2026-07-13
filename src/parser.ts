@@ -6,9 +6,34 @@
 import type { JsonRpcMessage, LineBuffer } from './types.js';
 
 export type ParseResult =
-  | { type: 'single'; message: JsonRpcMessage }
-  | { type: 'batch'; messages: JsonRpcMessage[] }
+  | { type: 'single'; message: JsonRpcMessage; isStrictlyValid: boolean }
+  | { type: 'batch'; messages: JsonRpcMessage[]; hasInvalidEntries: boolean }
   | null;
+
+function isValidJsonRpcId(id: unknown): boolean {
+  return id === null || typeof id === 'string' || typeof id === 'number';
+}
+
+function isStrictlyValidJsonRpcMessage(message: JsonRpcMessage): boolean {
+  const hasMethod = Object.hasOwn(message, 'method');
+  if (hasMethod) {
+    return typeof message.method === 'string'
+      && (!Object.hasOwn(message, 'id') || isValidJsonRpcId(message.id));
+  }
+
+  const hasResult = Object.hasOwn(message, 'result');
+  const hasError = Object.hasOwn(message, 'error');
+  if (hasResult === hasError || !Object.hasOwn(message, 'id') || !isValidJsonRpcId(message.id)) {
+    return false;
+  }
+
+  return !hasError || (
+    message.error !== null
+    && typeof message.error === 'object'
+    && typeof message.error.code === 'number'
+    && typeof message.error.message === 'string'
+  );
+}
 
 /**
  * Parse a single line as JSON-RPC message or batch
@@ -36,13 +61,18 @@ export function parseJsonRpcLineEx(line: string): ParseResult {
     // Batch message: JSON array of JSON-RPC objects
     if (Array.isArray(parsed)) {
       const messages: JsonRpcMessage[] = [];
+      let hasInvalidEntries = false;
       for (const item of parsed) {
         if (item && typeof item === 'object' && item.jsonrpc === '2.0') {
-          messages.push(item as JsonRpcMessage);
+          const message = item as JsonRpcMessage;
+          messages.push(message);
+          hasInvalidEntries ||= !isStrictlyValidJsonRpcMessage(message);
+        } else {
+          hasInvalidEntries = true;
         }
       }
       if (messages.length > 0) {
-        return { type: 'batch', messages };
+        return { type: 'batch', messages, hasInvalidEntries };
       }
       return null;
     }
@@ -51,7 +81,8 @@ export function parseJsonRpcLineEx(line: string): ParseResult {
       return null;
     }
 
-    return { type: 'single', message: parsed as JsonRpcMessage };
+    const message = parsed as JsonRpcMessage;
+    return { type: 'single', message, isStrictlyValid: isStrictlyValidJsonRpcMessage(message) };
   } catch {
     return null;
   }

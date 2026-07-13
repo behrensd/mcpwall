@@ -218,6 +218,49 @@ function sendAndCollect(
   });
 }
 
+function sendRawAndCollect(
+  proc: ReturnType<typeof spawn>,
+  lines: string[],
+  expectedCount: number,
+  timeoutMs = 15000
+): Promise<object[]> {
+  return new Promise((resolve, reject) => {
+    const responses: object[] = [];
+    let buffer = '';
+    const timer = setTimeout(() => {
+      resolve(responses);
+    }, timeoutMs);
+
+    proc.stdout!.setEncoding('utf-8');
+    proc.stdout!.on('data', (chunk: string) => {
+      buffer += chunk;
+      const splitLines = buffer.split('\n');
+      buffer = splitLines.pop() || '';
+      for (const line of splitLines) {
+        if (!line.trim()) continue;
+        try {
+          responses.push(JSON.parse(line));
+          if (responses.length >= expectedCount) {
+            clearTimeout(timer);
+            resolve(responses);
+          }
+        } catch {
+          // ignore non-JSON lines
+        }
+      }
+    });
+
+    proc.on('error', (err) => {
+      clearTimeout(timer);
+      reject(err);
+    });
+
+    for (const line of lines) {
+      proc.stdin!.write(line + '\n');
+    }
+  });
+}
+
 describe('Integration: proxy end-to-end', () => {
   beforeAll(async () => {
     // Check that dist exists
@@ -534,6 +577,84 @@ describe('Integration: proxy end-to-end', () => {
 
       // Different tool, own bucket — not rate-limited
       expect(byId(4).result).toBeDefined();
+    } finally {
+      proc.kill();
+    }
+  });
+
+  it('strict mode rejects malformed inbound JSON-RPC instead of forwarding raw lines', async () => {
+    const proc = spawn('node', [distEntry, '-c', testConfigPath, '--strict', '--', 'node', echoServerPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env },
+    });
+
+    try {
+      const responses = await sendRawAndCollect(proc, [
+        '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}',
+      ], 1);
+
+      expect(responses).toHaveLength(1);
+      const resp = responses[0] as {
+        jsonrpc?: unknown;
+        id?: unknown;
+        error?: { code?: unknown; message?: unknown };
+      };
+      expect(resp.jsonrpc).toBe('2.0');
+      expect(resp.id).toBeNull();
+      expect(resp.error?.code).toBe(-32700);
+      expect(resp.error?.message).toContain('Parse error');
+    } finally {
+      proc.kill();
+    }
+  });
+
+  it('strict mode rejects batches containing a malformed JSON-RPC entry', async () => {
+    const proc = spawn('node', [distEntry, '-c', testConfigPath, '--strict', '--', 'node', echoServerPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env },
+    });
+
+    try {
+      const responses = await sendRawAndCollect(proc, [
+        '[{"jsonrpc":"2.0","id":1,"method":"initialize"},{"unexpected":true}]',
+      ], 1);
+
+      expect(responses).toHaveLength(1);
+      const resp = responses[0] as {
+        jsonrpc?: unknown;
+        id?: unknown;
+        error?: { code?: unknown; message?: unknown };
+      };
+      expect(resp.jsonrpc).toBe('2.0');
+      expect(resp.id).toBeNull();
+      expect(resp.error?.code).toBe(-32600);
+      expect(resp.error?.message).toContain('Invalid Request');
+    } finally {
+      proc.kill();
+    }
+  });
+
+  it('strict mode rejects JSON-RPC objects without a request or response shape', async () => {
+    const proc = spawn('node', [distEntry, '-c', testConfigPath, '--strict', '--', 'node', echoServerPath], {
+      stdio: ['pipe', 'pipe', 'pipe'],
+      env: { ...process.env },
+    });
+
+    try {
+      const responses = await sendRawAndCollect(proc, [
+        '{"jsonrpc":"2.0","id":1}',
+      ], 1);
+
+      expect(responses).toHaveLength(1);
+      const resp = responses[0] as {
+        jsonrpc?: unknown;
+        id?: unknown;
+        error?: { code?: unknown; message?: unknown };
+      };
+      expect(resp.jsonrpc).toBe('2.0');
+      expect(resp.id).toBeNull();
+      expect(resp.error?.code).toBe(-32600);
+      expect(resp.error?.message).toContain('Invalid Request');
     } finally {
       proc.kill();
     }

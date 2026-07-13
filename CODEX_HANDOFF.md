@@ -53,12 +53,23 @@ Rules are first-match-wins, evaluated top-to-bottom. Project config rules are pr
    ```
 4. **Secrets in the repo directory are gitignored, not tracked** — confirmed safe: `.env.local`, `.mcpregistry_github_token`, `.mcpregistry_registry_token`. Don't `git add -A` blindly; always check `git status` before staging.
 
-## Current verified state (as of last commit `0c98ec3`)
+## Current verified state
+
+Continuation update after `1a5ca4e`:
+
+- Added opt-in `--strict` proxy mode. Malformed inbound JSON-RPC now returns a JSON-RPC parse/invalid-request error and is not forwarded when strict mode is enabled. Default behavior remains fail-open for compatibility.
+- Updated `README.md`, `SECURITY.md`, `CHANGELOG.md`, `.planning/MAINTENANCE-PLAN.md`, and rewrote `.planning/ROADMAP.md`.
+- `npx tsc --noEmit` → **clean, 0 errors**
+- `npm run build` → **succeeds**
+- `npx vitest run` → **164/164 tests pass**
+- Manual strict-mode check against `dist/index.js` returned `-32700` for invalid JSON and logged `strict_json_rpc`.
+
+Prior verified state as of `0c98ec3`:
 
 - `npx tsc --noEmit` → **clean, 0 errors**
 - `npm run build` → **succeeds** (esbuild via tsup, ~63KB output, does NOT typecheck — that's why tsc errors can slip through a green build)
 - `npx vitest run` → **163/163 tests pass**, ~2s runtime when the machine isn't under load
-- Working tree: clean except two **uncommitted, untracked** planning docs (see Housekeeping below)
+- Working tree then: clean except two **uncommitted, untracked** planning docs (see Housekeeping below)
 
 ## Session work log (chronological, all commits on `main`, nothing pushed)
 
@@ -96,12 +107,11 @@ Full detail lives in **`.planning/MAINTENANCE-PLAN.md`** (untracked — see Hous
 ### Tier 3 — design decisions needed, not mechanical fixes
 These need a product/security judgment call from Dom, not just code:
 - **`ask` action is a stub.** Rules with `action: ask` silently behave as `allow` (with a startup warning). Either implement real interactive prompting in the proxy, or remove `ask` from the schema/types and document it as a future phase. Touches `src/engine/policy.ts`, `src/proxy.ts`, `src/config/schema.ts`, `src/types.ts`.
-- **Fail-open on malformed JSON-RPC.** In `src/proxy.ts`, if a line fails to parse as JSON-RPC, it's forwarded raw without policy evaluation (intentional fail-open, but undocumented as a strict-mode toggle). Consider an opt-in `--strict` flag that rejects instead.
 - **Entropy-based secret detection may miss low-entropy secrets** (e.g. `sk-1111111111111111`). `src/engine/secrets.ts` — consider lowering default entropy thresholds or layering more fixed patterns.
 
 ### Housekeeping — explicit user decisions still pending
-- **`.planning/ROADMAP.md`** is stale and **untracked** (never committed). It's an 8-line stub claiming "Phase 1: Codebase Audit & Critical Fixes — Status: pending" — but that phase is actually done (see quick-1 above plus this session). Needs a rewrite or deletion; deliberately left alone this session since it needs Dom's input on what the *next* milestone content should say, not just a status flip.
-- **`.planning/MAINTENANCE-PLAN.md`** — written this session, **untracked**. Contains the full original `CONCERNS.md` backlog broken into tiers, plus the GitHub issues assessment below. Worth committing once reviewed, or folding into a rewritten ROADMAP.md.
+- **`.planning/ROADMAP.md`** has been rewritten as a current v0.4.0 roadmap and is still untracked until Dom asks to commit.
+- **`.planning/MAINTENANCE-PLAN.md`** is tracked and now reflects completed v0.4.0 hardening work, including `--strict`.
 - **GitHub issues #1 and #2** — explicitly left untouched this session per Dom's decision ("leave them for now"). Assessment for whoever revisits: both are from the same author (`tomjwxf` / "Tom, ScopeBlind"), opened the same day, zero comments, both pitching integration with the author's own npm package `protect-mcp` + a personal IETF draft (`draft-farley-acta-signed-receipts`) for Ed25519-signed audit receipts. They are near-duplicates of each other (#2 essentially restates #1). This is unsolicited vendor outreach, not a bug report or a mcpwall-user-filed feature request. Recommendation if/when revisited: **don't take the dependency** — mcpwall is a security tool, and adopting an unfamiliar third-party package to "sign" your security decisions is an unvetted supply-chain/trust surface. The underlying idea (tamper-evident/signed audit logs) is legitimate and could be built natively (mcpwall already emits JSON logs; native Ed25519 signing would be a small, dependency-light addition) — but that's a "build our own" roadmap item, not "integrate their package." If closing: close #2 as duplicate of #1, decline the integration on #1 with thanks.
 
 ## Conventions this repo/session followed (keep following them)
@@ -114,4 +124,4 @@ These need a product/security judgment call from Dom, not just code:
 
 ## Suggested next step
 
-Pick one of the Tier 3 design items above and bring it to Dom as a question before implementing — each one is a product/security tradeoff, not a mechanical fix, and this session deliberately stopped short of guessing at those. Alternatively, tackle the ROADMAP.md rewrite (low-risk, needs Dom's steer on what v0.4.0's *next* phase should be) or revisit the GitHub issues per the recommendation above.
+Pick one of the remaining Tier 3 design items above and bring it to Dom as a question before implementing — `ask` semantics and entropy thresholds are product/security tradeoffs, not mechanical fixes. Alternatively, revisit GitHub issues #1/#2 per the recommendation above when Dom wants community/vendor outreach handled.

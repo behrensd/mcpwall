@@ -1,5 +1,14 @@
 # Changelog
 
+## Unreleased
+
+### Hardening
+
+- Add opt-in `--strict` proxy mode to reject malformed JSON-RPC lines instead of forwarding them raw.
+- Add `mcpwall explain-policy` to print the merged effective policy without starting the proxy.
+- Add opt-in per-tool rate limiting via `settings.rate_limit`.
+- Bound pending request correlation memory and disable ANSI colors when stderr is not a TTY.
+
 ## 0.3.0 (2026-02-28)
 
 ### `mcpwall check` — dry-run policy tester

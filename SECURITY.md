@@ -30,6 +30,7 @@ The following are in scope for security reports:
 - Secret scanner evasion
 - Path traversal bypasses in `not_under` matcher
 - Proxy crashes that could cause message loss or silent passthrough
+- Malformed JSON-RPC handling that bypasses `--strict`
 - ReDoS in user-provided regex patterns
 - Any way to exfiltrate data through or around the proxy
 

@@ -331,12 +331,14 @@ mcpwall -c rules/servers/filesystem-mcp.yaml -- npx -y @modelcontextprotocol/ser
 mcpwall [options] -- <command> [args...]   # Proxy mode
 mcpwall init [--profile <name>]            # Interactive setup
 mcpwall check [--input <json>]             # Dry-run: test rules without the proxy
+mcpwall explain-policy                     # Print the merged effective policy
 mcpwall wrap <server-name>                 # Wrap specific server
 ```
 
 Options:
 - `-c, --config <path>` — path to config file
 - `--log-level <level>` — override log level (debug/info/warn/error)
+- `--strict` — reject malformed JSON-RPC lines instead of forwarding them raw
 
 ### Testing rules with `mcpwall check`
 
@@ -377,7 +379,7 @@ mcpwall also prints color-coded output to stderr so you can see decisions in rea
 
 - **Bidirectional scanning**: Both inbound requests and outbound responses are evaluated against rules
 - **Fail closed on invalid config**: Bad regex in a rule crashes at startup, never silently passes traffic
-- **Fail open on outbound errors**: If response parsing fails, the raw response is forwarded (never blocks legitimate traffic)
+- **Fail open on malformed messages by default**: Non-JSON-RPC lines are forwarded raw for compatibility; use `--strict` to reject malformed JSON-RPC instead
 - **Args redacted on deny**: Blocked tool call arguments are never written to logs
 - **Surgical redaction**: Secrets in responses are replaced in-place, preserving the JSON-RPC response structure
 - **Path traversal defense**: `not_under` matcher uses `path.resolve()` to prevent `../` bypass

@@ -2,9 +2,15 @@
 
 _Drafted 2026-07-13. Source: `.planning/codebase/CONCERNS.md` (2026-02-27), minus the 5 items fixed by quick-1 and the 2 fixed this session._
 
-## Already done this session (uncommitted)
+## Already done in v0.4.0 hardening work
 - `src/config/schema.ts` — Zod v4 `.refine()` API → `tsc` clean
 - `vitest.config.ts` + `integration.test.ts` — 20s timeout, kills load-induced flakes
+- `src/proxy.ts` — cap pending request correlation map at 10,000 entries
+- `src/logger.ts` — disable ANSI color codes when stderr is not a TTY
+- `src/config/loader.ts` — warn on duplicate global/project rule names
+- `src/cli/explain.ts` — add `mcpwall explain-policy`
+- `src/engine/rate-limiter.ts` + proxy wiring — add opt-in per-tool rate limiting
+- `src/proxy.ts` + CLI wiring — add opt-in `--strict` malformed JSON-RPC rejection
 
 ---
 
@@ -37,7 +43,6 @@ _Drafted 2026-07-13. Source: `.planning/codebase/CONCERNS.md` (2026-02-27), minu
 
 ### Tier 3 — design decisions (need Dom, not just code)
 - **`ask` action** silently behaves as `allow` — implement interactive prompt, or remove from schema + document as Phase-2.
-- **Fail-open on malformed JSON** (`proxy.ts`) — add opt-in `--strict` to reject instead of forward?
 - **Entropy thresholds** may miss low-entropy secrets — pair fixed patterns with entropy, or lower defaults.
 - **ReDoS validation** — partially covered now (schema.ts rejects nested quantifiers via `hasReDoSRisk`); decide if that's sufficient.
 

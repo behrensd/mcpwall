@@ -22,6 +22,7 @@ export interface ProxyOptions {
   logRedacted?: 'none' | 'hash' | 'full';
   serverName?: string;
   rateLimiter?: RateLimiter;
+  strictJsonRpc?: boolean;
 }
 
 /** Extract the tool name from a tools/call request, if present. */
@@ -49,7 +50,18 @@ export function evictOldestIfFull<K, V>(map: Map<K, V>, maxSize: number): void {
  * Returns the child process for lifecycle management
  */
 export function createProxy(options: ProxyOptions): ChildProcess {
-  const { command, args, policyEngine, logger, logArgs = 'none', outboundPolicyEngine, logRedacted = 'none', serverName, rateLimiter } = options;
+  const {
+    command,
+    args,
+    policyEngine,
+    logger,
+    logArgs = 'none',
+    outboundPolicyEngine,
+    logRedacted = 'none',
+    serverName,
+    rateLimiter,
+    strictJsonRpc = false,
+  } = options;
 
   /** Rate-limit tools/call requests. Returns a synthetic deny Decision if the
    * tool's bucket is exhausted, otherwise undefined (not our concern). */
@@ -164,12 +176,65 @@ export function createProxy(options: ProxyOptions): ChildProcess {
     };
   }
 
+  function buildInvalidJsonRpcError(line: string): object {
+    const trimmed = line.trim();
+    try {
+      JSON.parse(trimmed);
+      return {
+        jsonrpc: '2.0' as const,
+        id: null,
+        error: {
+          code: -32600,
+          message: '[mcpwall] Invalid Request: malformed JSON-RPC message',
+        },
+      };
+    } catch {
+      return {
+        jsonrpc: '2.0' as const,
+        id: null,
+        error: {
+          code: -32700,
+          message: '[mcpwall] Parse error: invalid JSON',
+        },
+      };
+    }
+  }
+
+  function rejectMalformedInbound(line: string): void {
+    const error = buildInvalidJsonRpcError(line);
+    process.stdout.write(JSON.stringify(error) + '\n');
+    logger.log({
+      ts: new Date().toISOString(),
+      method: 'invalid',
+      tool: undefined,
+      action: 'deny',
+      rule: 'strict_json_rpc',
+      message: 'Malformed inbound JSON-RPC message',
+    });
+  }
+
+  function rejectMalformedOutbound(): void {
+    logger.log({
+      ts: new Date().toISOString(),
+      method: 'invalid',
+      tool: undefined,
+      action: 'deny',
+      rule: 'strict_json_rpc',
+      direction: 'outbound',
+      message: 'Malformed outbound JSON-RPC message',
+    });
+  }
+
   // === INBOUND PATH: Claude → Firewall → MCP Server ===
   const inboundBuffer = createLineBuffer((line) => {
     try {
       const result = parseJsonRpcLineEx(line);
 
       if (!result) {
+        if (strictJsonRpc) {
+          rejectMalformedInbound(line);
+          return;
+        }
         if (child.stdin && !child.stdin.destroyed) {
           child.stdin.write(line + '\n');
         }
@@ -177,6 +242,10 @@ export function createProxy(options: ProxyOptions): ChildProcess {
       }
 
       if (result.type === 'single') {
+        if (strictJsonRpc && !result.isStrictlyValid) {
+          rejectMalformedInbound(line);
+          return;
+        }
         const msg = result.message;
         let decision = policyEngine.evaluate(msg);
         if (decision.action !== 'deny') {
@@ -201,6 +270,10 @@ export function createProxy(options: ProxyOptions): ChildProcess {
 
       // Batch message: evaluate each element individually
       if (result.type === 'batch') {
+        if (strictJsonRpc && result.hasInvalidEntries) {
+          rejectMalformedInbound(line);
+          return;
+        }
         const forwarded: object[] = [];
         const errors: object[] = [];
 
@@ -369,17 +442,29 @@ export function createProxy(options: ProxyOptions): ChildProcess {
       const result = parseJsonRpcLineEx(line);
 
       if (!result) {
+        if (strictJsonRpc) {
+          rejectMalformedOutbound();
+          return;
+        }
         // Not valid JSON-RPC, pass through raw
         process.stdout.write(line + '\n');
         return;
       }
 
       if (result.type === 'single') {
+        if (strictJsonRpc && !result.isStrictlyValid) {
+          rejectMalformedOutbound();
+          return;
+        }
         evaluateOutbound(result.message);
         return;
       }
 
       if (result.type === 'batch') {
+        if (strictJsonRpc && result.hasInvalidEntries) {
+          rejectMalformedOutbound();
+          return;
+        }
         for (const msg of result.messages) {
           evaluateOutbound(msg);
         }
