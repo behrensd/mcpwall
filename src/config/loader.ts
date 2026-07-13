@@ -69,9 +69,37 @@ function substituteInObject(obj: unknown): unknown {
 }
 
 /**
+ * Warn when the same rule name appears in both configs. Project rules are
+ * ordered first and win on first-match, silently shadowing the global rule —
+ * surface that so a misconfiguration doesn't go unnoticed.
+ */
+export function warnDuplicateNames(
+  kind: string,
+  globalItems: { name?: string }[] = [],
+  projectItems: { name?: string }[] = []
+): void {
+  const projectNames = new Set(
+    projectItems.map((r) => r.name).filter((n): n is string => !!n)
+  );
+  const dupes = new Set(
+    globalItems
+      .map((r) => r.name)
+      .filter((n): n is string => !!n && projectNames.has(n))
+  );
+  for (const name of dupes) {
+    process.stderr.write(
+      `[mcpwall] Warning: duplicate ${kind} name "${name}" in global and project config — project rule wins, global is shadowed\n`
+    );
+  }
+}
+
+/**
  * Merge two configs: project settings override global, rules concatenate
  */
 function mergeConfigs(global: Config, project: Config): Config {
+  warnDuplicateNames('rule', global.rules, project.rules);
+  warnDuplicateNames('outbound rule', global.outbound_rules, project.outbound_rules);
+  warnDuplicateNames('secret pattern', global.secrets?.patterns, project.secrets?.patterns);
   return {
     version: project.version,
     settings: {
