@@ -13,6 +13,7 @@ import { createProxy } from './proxy.js';
 import { runInit } from './cli/init.js';
 import { runWrap } from './cli/wrap.js';
 import { runCheck } from './cli/check.js';
+import { runExplain } from './cli/explain.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json');
@@ -103,6 +104,20 @@ if (dashDashIndex !== -1) {
       const globalOptions = program.opts();
       try {
         await runCheck(options.input, globalOptions.config, toolName, toolArgs);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        process.stderr.write(`[mcpwall] Error: ${message}\n`);
+        process.exit(1);
+      }
+    });
+
+  program
+    .command('explain-policy')
+    .description('print the effective merged policy (global + project) without running the proxy')
+    .action(async () => {
+      const globalOptions = program.opts();
+      try {
+        await runExplain(globalOptions.config);
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err);
         process.stderr.write(`[mcpwall] Error: ${message}\n`);
