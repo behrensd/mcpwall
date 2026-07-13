@@ -100,3 +100,32 @@ describe('Logger write stream error handling', () => {
     expect(internal.writeStream).toBeNull();
   });
 });
+
+describe('Logger stderr colorization', () => {
+  function captureStderr(logger: Logger): string {
+    const writes: string[] = [];
+    vi.spyOn(process.stderr, 'write').mockImplementation((str) => {
+      writes.push(String(str));
+      return true;
+    });
+    logger.log({ ts: new Date().toISOString(), method: 'tools/call', tool: 'x', action: 'deny', rule: 'r' });
+    return writes.join('');
+  }
+
+  it('emits no ANSI escape codes when stderr is not a TTY', () => {
+    const { logger } = makeTmpLogger();
+    (logger as unknown as { useColor: boolean }).useColor = false;
+    const out = captureStderr(logger);
+    expect(out).not.toMatch(/\x1b\[/);
+    expect(out).toMatch(/DENY/);
+    logger.close();
+  });
+
+  it('emits ANSI color codes when stderr is a TTY', () => {
+    const { logger } = makeTmpLogger();
+    (logger as unknown as { useColor: boolean }).useColor = true;
+    const out = captureStderr(logger);
+    expect(out).toMatch(/\x1b\[31mDENY\x1b\[0m/);
+    logger.close();
+  });
+});

@@ -25,6 +25,9 @@ export class Logger {
   private currentLogFile: string | null = null;
   private writeStream: fs.WriteStream | null = null;
   private closed = false;
+  // Only colorize when stderr is an interactive terminal — piping to a file or
+  // log aggregator should yield clean, ANSI-free text.
+  private useColor: boolean = process.stderr.isTTY === true;
 
   constructor(options: LoggerOptions) {
     this.logDir = this.expandPath(options.logDir);
@@ -124,17 +127,19 @@ export class Logger {
   }
 
   private formatAction(action: string): string {
+    const c = (code: string, label: string) =>
+      this.useColor ? `\x1b[${code}m${label}\x1b[0m` : label;
     switch (action) {
       case 'allow':
-        return '\x1b[32mALLOW\x1b[0m';    // green
+        return c('32', 'ALLOW');    // green
       case 'deny':
-        return '\x1b[31mDENY\x1b[0m';     // red
+        return c('31', 'DENY');     // red
       case 'ask':
-        return '\x1b[33mASK\x1b[0m';      // yellow
+        return c('33', 'ASK');      // yellow
       case 'redact':
-        return '\x1b[36mREDACT\x1b[0m';   // cyan
+        return c('36', 'REDACT');   // cyan
       case 'log_only':
-        return '\x1b[34mLOG\x1b[0m';      // blue
+        return c('34', 'LOG');      // blue
       default:
         return action.toUpperCase();
     }
